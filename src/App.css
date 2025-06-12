@@ -1,0 +1,101 @@
+@font-face {
+  font-family: 'Kalameh';
+  src: url('fonts/KalamehWeb-Thin.woff2') format('woff2');
+  font-weight: 100;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kalameh';
+  src: url('fonts/KalamehWeb-ExtraLight.woff2') format('woff2');
+  font-weight: 200;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kalameh';
+  src: url('fonts/KalamehWeb-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kalameh';
+  src: url('fonts/KalamehWeb-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kalameh';
+  src: url('fonts/KalamehWeb-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kalameh';
+  src: url('fonts/KalamehWeb-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kalameh';
+  src: url('fonts/KalamehWeb-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kalameh';
+  src: url('fonts/KalamehWeb-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Kalameh';
+  src: url('fonts/KalamehWeb-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+}
+
+
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Kalameh', sans-serif;
+}
+a {text-decoration: none;color: white;}
+body {
+  font-family: 'Kalameh', sans-serif;
+  direction: rtl;
+  background-color: #000;
+  color: white;
+  overflow-x: hidden;
+}
+
+.App {
+  min-height: 100vh;
+}
+html , body  {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgb(0, 0, 0); 
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(#FFEB00,#13c8ff);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box; 
+}

@@ -1,0 +1,298 @@
+body {
+  margin: 0;
+  direction: rtl;
+  background-color: #000;
+  color: white;
+}
+html, body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+.home {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  min-height: 100vh; /* PC و موبایل حداقل 100vh */
+}
+
+.pattern {
+  position: absolute;
+  z-index: -1000;
+  inset: 0;
+  --c: 7px;
+  background-color: #000;
+  opacity: 0.3;
+  background-image: radial-gradient(
+      circle at 50% 50%,
+      #0000 1.5px,
+      #000 0 var(--c),
+      #0000 var(--c)
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      #0000 1.5px,
+      #000 0 var(--c),
+      #0000 var(--c)
+    ),
+    radial-gradient(circle at 50% 50%, #f00, #f000 60%),
+    radial-gradient(circle at 50% 50%, #ff0, #ff00 60%),
+    radial-gradient(circle at 50% 50%, #0f0, #0f00 60%),
+    radial-gradient(ellipse at 50% 50%, #00f, #00f0 60%);
+  background-size:
+    12px 20.7846097px,
+    12px 20.7846097px,
+    200% 200%,
+    200% 200%,
+    200% 200%,
+    200% 20.7846097px;
+  --p: 0px 0px, 6px 10.39230485px;
+  background-position:
+    var(--p),
+    0% 0%,
+    0% 0%,
+    0% 0px;
+  animation:
+    wee 40s linear infinite,
+    filt 6s linear infinite;
+}
+
+@keyframes filt {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes wee {
+  0% {
+    background-position:
+      var(--p),
+      800% 400%,
+      1000% -400%,
+      -1200% -600%,
+      400% 41.5692194px;
+  }
+  to {
+    background-position:
+      var(--p),
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%;
+  }
+}
+
+.content-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 100vh; /* برای دسکتاپ */
+  gap: 40px;
+}
+
+/* دسکتاپ بدون تغییر */
+.ferris-wheel-container {
+  margin-top: -40rem;
+  height: 160vh;
+  padding: 0;
+  align-self: flex-end;
+}
+
+.main {
+  flex: 1;
+  text-align: right;
+  padding-right: 80px;
+  margin-top: -150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ferris-wheel-container canvas {
+  width: 1000px;
+  height: 1000px;
+  display: block;
+}
+
+.title {
+  font-size: 10vw;
+  font-weight: 900;
+  background: linear-gradient(188deg , #ffb527, #13c8ff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 2.3vw;
+  font-weight: 600;
+  margin-top: -40px;
+  display: flex;
+}
+
+.home-buttons {
+  margin-top: 30px;
+  display: flex;
+  justify-content: start;
+  gap: 40px;
+}
+
+.home-btn {
+  padding: 12px 54px;
+  font-size: 26px;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.gallery {
+  border: 2px solid #FFEB00;
+  color: #FFEB00;
+  background: transparent;
+}
+.hightlight{
+  color: #FFEB00;
+  padding-right: 5px;
+}
+.gallery:hover {
+  background-color: rgb(255, 235, 0, 0.01) ;
+  filter: drop-shadow(0 0 10px #FFEB00 );
+  transform:scale(1.05);
+}
+
+.contact {
+  border: 2px solid #13c8ff;
+  color: #13c8ff;
+  background: transparent;
+}
+
+.contact:hover {
+  background-color: rgba(30, 53, 221, 0.01);
+  filter: drop-shadow(0 0 10px #13c8ff );
+  transform:scale(1.05);
+}
+
+/* انیمیشن ورود از راست */
+@keyframes fadeInFromRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fadeInFromRight {
+  animation-name: fadeInFromRight;
+  animation-duration: 0.3s;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+  opacity: 0;
+}
+
+.animate-stagger > * {
+  opacity: 0;
+  animation-name: fadeInFromRight;
+  animation-duration: 0.3s;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.animate-stagger > *:nth-child(1) {
+  animation-delay: 0s;
+}
+.animate-stagger > *:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.animate-stagger > *:nth-child(3) {
+  animation-delay: 0.5s;
+}
+.contact {
+  animation-delay: 0.7s;
+}
+
+@media (max-width: 768px) {
+  .main {
+    min-height: 100vh;
+    margin-top: -15rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    text-align: center;
+    padding-right: 0; /* این خط را اضافه کن */
+  }
+
+  .content-container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    position: relative;
+    width: 100%;
+  }
+
+  .title {
+    font-size: 25vw;
+    font-weight: 900;
+    line-height: 1.1;
+    width: 100%;
+    text-align: center;
+  }
+
+  .subtitle {
+    font-size: 4.5vw;
+    margin-top: 8px;
+    line-height: 1.4;
+    max-width: 90vw;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .home-buttons {
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 24px;
+    width: 100%;
+    align-items: center;
+  }
+
+  .home-btn {
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    font-size: 18px;
+    padding: 10px 24px;
+  }
+
+  .ferris-wheel-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 600px;
+    opacity: 0.75;
+    z-index: 1;
+    pointer-events: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .ferris-wheel-container canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}

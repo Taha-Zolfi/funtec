@@ -78,9 +78,7 @@ body {
   overflow-x: hidden;
 }
 
-.App {
-  min-height: 100vh;
-}
+
 html , body  {
   scroll-behavior: smooth;
 }

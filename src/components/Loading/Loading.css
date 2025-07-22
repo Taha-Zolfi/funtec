@@ -1,0 +1,292 @@
+/* Loading Container */
+.loading-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  overflow: hidden;
+  zoom: 1;
+}
+
+/* Logo Container */
+.logo-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+}
+
+.logo-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Main Logo */
+.logo {
+  width: 120px;
+  height: 120px;
+  z-index: 10;
+  position: relative;
+  filter: 
+    drop-shadow(0 0 20px rgba(19, 200, 255, 0.6))
+    drop-shadow(0 0 40px rgba(255, 235, 0, 0.2))
+    drop-shadow(0 0 60px rgba(19, 200, 255, 0.2));
+  animation: 
+    logoFloat 3s ease-in-out infinite,
+    logoRotate 8s linear infinite,
+    logoScale 2s ease-in-out infinite alternate;
+}
+
+/* SVG Animation Overlay */
+.logo-animation-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+}
+
+/* Scanning Lines */
+.scan-line {
+  animation: scanMove 2s ease-in-out infinite;
+}
+
+.scan-1 {
+  animation-delay: 0s;
+  animation-duration: 3s;
+}
+
+.scan-2 {
+  animation-delay: 0.5s;
+  animation-duration: 2.5s;
+}
+
+.scan-3 {
+  animation-delay: 1s;
+  animation-duration: 2s;
+}
+
+.scan-4 {
+  animation-delay: 1.5s;
+  animation-duration: 3.5s;
+}
+
+/* Morphing Circle */
+.morph-circle {
+  animation: 
+    morphRotate 4s linear infinite,
+    morphScale 3s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+/* Pulse Circle */
+.pulse-circle {
+  animation: pulseEffect 2s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* Corner Brackets */
+.bracket {
+  animation: bracketGlow 2s ease-in-out infinite alternate;
+}
+
+.bracket-tl { animation-delay: 0s; }
+.bracket-tr { animation-delay: 0.5s; }
+.bracket-bl { animation-delay: 1s; }
+.bracket-br { animation-delay: 1.5s; }
+
+/* Digital Grid */
+.digital-grid {
+  animation: gridFlicker 4s ease-in-out infinite;
+}
+
+/* Glitch Effect Layers */
+.glitch-layer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  z-index: 8;
+  opacity: 0;
+}
+
+.glitch-layer img {
+  width: 100%;
+  height: 100%;
+}
+
+.glitch-1 {
+  animation: glitchEffect1 0.3s ease-in-out infinite;
+  filter: hue-rotate(180deg) saturate(2);
+}
+
+.glitch-2 {
+  animation: glitchEffect2 0.4s ease-in-out infinite;
+  filter: hue-rotate(90deg) saturate(1.5);
+}
+
+/* Animations */
+@keyframes logoFloat {
+  0%, 100% { 
+    transform: translateY(0px);
+  }
+  50% { 
+    transform: translateY(-15px);
+  }
+}
+
+@keyframes logoRotate {
+  0% { 
+    transform: rotate(0deg);
+  }
+  100% { 
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes logoScale {
+  0% { 
+    transform: scale(1);
+  }
+  100% { 
+    transform: scale(1.1);
+  }
+}
+
+@keyframes scanMove {
+  0% {
+    transform: translateX(-200px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(200px);
+    opacity: 0;
+  }
+}
+
+@keyframes morphRotate {
+  0% { 
+    transform: rotate(0deg);
+  }
+  100% { 
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes morphScale {
+  0% { 
+    r: 80;
+    stroke-dasharray: 20,10;
+  }
+  50% { 
+    r: 90;
+    stroke-dasharray: 10,20;
+  }
+  100% { 
+    r: 80;
+    stroke-dasharray: 20,10;
+  }
+}
+
+@keyframes pulseEffect {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+}
+
+@keyframes bracketGlow {
+  0% {
+    opacity: 0.6;
+    stroke-width: 2;
+  }
+  100% {
+    opacity: 1;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 10px currentColor);
+  }
+}
+
+@keyframes gridFlicker {
+  0%, 100% {
+    opacity: 0.1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes glitchEffect1 {
+  0%, 90%, 100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateX(0);
+  }
+  5%, 15% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) translateX(-5px);
+  }
+}
+
+@keyframes glitchEffect2 {
+  0%, 85%, 100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateX(0);
+  }
+  10%, 20% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) translateX(5px);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .logo-container {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .logo,
+  .glitch-layer {
+    width: 90px;
+    height: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  .logo-container {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .logo,
+  .glitch-layer {
+    width: 70px;
+    height: 70px;
+  }
+}

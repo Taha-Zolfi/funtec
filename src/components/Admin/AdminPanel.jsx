@@ -708,6 +708,19 @@ const ProductModal = ({ type, product, onClose }) => {
     setFormData({ ...formData, images: newImages })
   }
 
+  const handleImageUpload = (index, file) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const newImages = [...formData.images]
+        newImages[index].image = e.target.result
+        newImages[index].alt_text = file.name // Set filename as alt text
+        setFormData({ ...formData, images: newImages })
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault()
 
@@ -903,58 +916,82 @@ const ProductModal = ({ type, product, onClose }) => {
               <h3>🖼️ تصاویر</h3>
               {formData.images.map((image, index) => (
                 <div key={index} className="image-form-row">
-                  <input
-                    type="url"
-                    placeholder="URL تصویر"
-                    value={image.image}
-                    onChange={(e) => {
-                      const newImages = [...formData.images]
-                      newImages[index].image = e.target.value
-                      setFormData({ ...formData, images: newImages })
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="متن جایگزین"
-                    value={image.alt_text}
-                    onChange={(e) => {
-                      const newImages = [...formData.images]
-                      newImages[index].alt_text = e.target.value
-                      setFormData({ ...formData, images: newImages })
-                    }}
-                  />
-                  <input
-                    type="number"
-                    placeholder="ترتیب"
-                    value={image.order}
-                    onChange={(e) => {
-                      const newImages = [...formData.images]
-                      newImages[index].order = Number.parseInt(e.target.value)
-                      setFormData({ ...formData, images: newImages })
-                    }}
-                  />
-                  <label>
+                  <div className="image-upload-container">
+                    <div className="file-upload-wrapper">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleImageUpload(index, e.target.files[0])}
+                        className="file-input"
+                        id={`image-upload-${index}`}
+                      />
+                      <label htmlFor={`image-upload-${index}`} className="file-upload-label">
+                        📁 انتخاب تصویر
+                      </label>
+                    </div>
+                    <span className="upload-divider">یا</span>
                     <input
-                      type="checkbox"
-                      checked={image.is_main}
+                      type="url"
+                      placeholder="لینک تصویر"
+                      value={image.image.startsWith('data:') ? '' : image.image}
                       onChange={(e) => {
                         const newImages = [...formData.images]
-                        // If setting as main, unset others
-                        if (e.target.checked) {
-                          newImages.forEach((img, i) => {
-                            img.is_main = i === index
-                          })
-                        } else {
-                          newImages[index].is_main = false
-                        }
+                        newImages[index].image = e.target.value
+                        setFormData({ ...formData, images: newImages })
+                      }}
+                      className="url-input"
+                    />
+                    {image.image && (
+                      <div className="image-preview">
+                        <img src={image.image} alt="Preview" />
+                        <span className="preview-label">پیش‌نمایش</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="image-form-controls">
+                    <input
+                      type="text"
+                      placeholder="متن جایگزین"
+                      value={image.alt_text}
+                      onChange={(e) => {
+                        const newImages = [...formData.images]
+                        newImages[index].alt_text = e.target.value
                         setFormData({ ...formData, images: newImages })
                       }}
                     />
-                    اصلی
-                  </label>
-                  <button type="button" className="remove-btn" onClick={() => removeImage(index)}>
-                    🗑️
-                  </button>
+                    <input
+                      type="number"
+                      placeholder="ترتیب"
+                      value={image.order}
+                      onChange={(e) => {
+                        const newImages = [...formData.images]
+                        newImages[index].order = Number.parseInt(e.target.value)
+                        setFormData({ ...formData, images: newImages })
+                      }}
+                    />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#4ecdc4', fontSize: '0.9rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={image.is_main}
+                        onChange={(e) => {
+                          const newImages = [...formData.images]
+                          // If setting as main, unset others
+                          if (e.target.checked) {
+                            newImages.forEach((img, i) => {
+                              img.is_main = i === index
+                            })
+                          } else {
+                            newImages[index].is_main = false
+                          }
+                          setFormData({ ...formData, images: newImages })
+                        }}
+                      />
+                      اصلی
+                    </label>
+                    <button type="button" className="remove-btn" onClick={() => removeImage(index)}>
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               ))}
               <button type="button" className="add-btn" onClick={addImage}>
@@ -1002,6 +1039,16 @@ const NewsModal = ({ type, news, onClose }) => {
       })
     }
   }, [news, type])
+
+  const handleNewsImageUpload = (file) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setFormData({ ...formData, image: e.target.result })
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -1100,12 +1147,34 @@ const NewsModal = ({ type, news, onClose }) => {
               </div>
               <div className="form-group">
                 <label>تصویر خبر:</label>
-                <input
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
+                <div className="image-upload-container">
+                  <div className="file-upload-wrapper">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleNewsImageUpload(e.target.files[0])}
+                      className="file-input"
+                      id="news-image-upload"
+                    />
+                    <label htmlFor="news-image-upload" className="file-upload-label">
+                      📁 انتخاب تصویر
+                    </label>
+                  </div>
+                  <span className="upload-divider">یا</span>
+                  <input
+                    type="url"
+                    value={formData.image.startsWith('data:') ? '' : formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    placeholder="لینک تصویر"
+                    className="url-input"
+                  />
+                  {formData.image && (
+                    <div className="image-preview large">
+                      <img src={formData.image} alt="Preview" />
+                      <span className="preview-label">پیش‌نمایش</span>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="form-group checkbox-group">
                 <label>

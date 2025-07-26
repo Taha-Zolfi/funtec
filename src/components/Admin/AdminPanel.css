@@ -789,6 +789,10 @@
   gap: 1rem;
   align-items: center;
   margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .feature-form-row {
@@ -797,14 +801,58 @@
   gap: 1rem;
   align-items: center;
   margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .image-form-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 100px 80px 50px;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: stretch;
+  margin-bottom: 1rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.image-form-controls {
+  display: grid;
+  grid-template-columns: 1fr 100px 80px 50px;
   gap: 1rem;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-top: 1rem;
+}
+
+.dynamic-form-row input,
+.feature-form-row input,
+.image-form-controls input {
+  padding: 12px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+}
+
+.dynamic-form-row input:focus,
+.feature-form-row input:focus,
+.image-form-controls input:focus {
+  outline: none;
+  border-color: #4ecdc4;
+  box-shadow: 0 0 15px rgba(78, 205, 196, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dynamic-form-row input::placeholder,
+.feature-form-row input::placeholder,
+.image-form-controls input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
 }
 
 .add-btn {
@@ -816,10 +864,14 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.9rem;
+  font-weight: 600;
+  margin-top: 1rem;
 }
 
 .add-btn:hover {
   background: rgba(78, 205, 196, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(78, 205, 196, 0.2);
 }
 
 .remove-btn {
@@ -831,10 +883,141 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-size: 0.9rem;
+  font-weight: 600;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .remove-btn:hover {
   background: rgba(255, 107, 107, 0.3);
+  transform: scale(1.1);
+}
+
+/* Image Upload Styles */
+.image-upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.file-upload-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.file-input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.file-upload-label {
+  display: inline-block;
+  padding: 15px 25px;
+  background: linear-gradient(45deg, #4ecdc4, #44a08d);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  min-width: 150px;
+}
+
+.file-upload-label:hover {
+  background: linear-gradient(45deg, #44a08d, #4ecdc4);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(78, 205, 196, 0.3);
+}
+
+.upload-divider {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.upload-divider::before,
+.upload-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.upload-divider::before {
+  left: 0;
+}
+
+.upload-divider::after {
+  right: 0;
+}
+
+.url-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.url-input:focus {
+  outline: none;
+  border-color: #4ecdc4;
+  box-shadow: 0 0 20px rgba(78, 205, 196, 0.2);
+}
+
+.url-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.image-preview {
+  position: relative;
+  display: inline-block;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid rgba(78, 205, 196, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.image-preview img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+.image-preview.large img {
+  width: 200px;
+  height: 140px;
+}
+
+.preview-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+  color: #fff;
+  padding: 8px;
+  font-size: 0.8rem;
+  text-align: center;
 }
 
 /* Modal Actions */

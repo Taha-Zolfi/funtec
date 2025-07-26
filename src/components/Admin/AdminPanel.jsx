@@ -121,6 +121,12 @@ const AdminPanel = () => {
           >
             💬 نظرات
           </button>
+          <button
+            className={`nav-item ${activeTab === "news" ? "active" : ""}`}
+            onClick={() => setActiveTab("news")}
+          >
+            📰 مدیریت اخبار
+          </button>
         </nav>
         <div className="admin-actions">
           <button className="danger-btn" onClick={handleClearAllData}>
@@ -141,10 +147,26 @@ const AdminPanel = () => {
           />
         )}
         {activeTab === "reviews" && <ReviewsTab onRefresh={loadData} />}
+        {activeTab === "news" && (
+          <NewsTab
+            onEdit={(news) => openModal("edit-news", news)}
+            onCreate={() => openModal("create-news")}
+            onRefresh={loadData}
+          />
+        )}
       </div>
 
       {/* Modal */}
-      {showModal && <ProductModal type={modalType} product={selectedProduct} onClose={closeModal} />}
+      {showModal && (
+        <>
+          {(modalType === "create-product" || modalType === "edit-product") && (
+            <ProductModal type={modalType} product={selectedProduct} onClose={closeModal} />
+          )}
+          {(modalType === "create-news" || modalType === "edit-news") && (
+            <NewsModal type={modalType} news={selectedProduct} onClose={closeModal} />
+          )}
+        </>
+      )}
     </div>
   )
 }
@@ -180,6 +202,13 @@ const Dashboard = ({ stats }) => (
         <div className="stat-info">
           <h3>{stats.average_rating || 0}</h3>
           <p>میانگین امتیاز</p>
+        </div>
+      </div>
+      <div className="stat-card">
+        <div className="stat-icon">📰</div>
+        <div className="stat-info">
+          <h3>{stats.total_news || 0}</h3>
+          <p>اخبار منتشر شده</p>
         </div>
       </div>
     </div>
@@ -320,6 +349,293 @@ const ReviewsTab = ({ onRefresh }) => {
           <div className="empty-state">
             <p>هنوز نظری ثبت نشده است</p>
           </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// News Tab Component
+const NewsTab = ({ onEdit, onCreate, onRefresh }) => {
+  const [news, setNews] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [sortBy, setSortBy] = useState('newest')
+
+  useEffect(() => {
+    setNews(db.getNews())
+  }, [])
+
+  const handleDeleteNews = (id) => {
+    if (window.confirm("آیا مطمئن هستید؟")) {
+      db.deleteNews(id)
+      setNews(db.getNews())
+      onRefresh()
+    }
+  }
+
+  const handleToggleFeatured = (id, currentStatus) => {
+    // First, remove featured from all other news
+    if (!currentStatus) {
+      news.forEach(n => {
+        if (n.is_featured) {
+          db.updateNews(n.id, { is_featured: false })
+        }
+      })
+    }
+    
+    // Then toggle this news
+    db.updateNews(id, { is_featured: !currentStatus })
+    setNews(db.getNews())
+    onRefresh()
+  }
+  
+  const handleBulkDelete = () => {
+    if (window.confirm("آیا مطمئن هستید که می‌خواهید همه اخبار را حذف کنید؟")) {
+      news.forEach(article => db.deleteNews(article.id))
+      setNews([])
+      onRefresh()
+    }
+  }
+  
+  const handleExportNews = () => {
+    const dataStr = JSON.stringify(news, null, 2)
+    const dataBlob = new Blob([dataStr], {type: 'application/json'})
+    const url = URL.createObjectURL(dataBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'news-export.json'
+    link.click()
+  }
+  
+  // Filter and sort news
+  let filteredNews = news
+  
+  if (searchTerm) {
+    filteredNews = filteredNews.filter(article =>
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  }
+  
+  if (selectedCategory !== 'all') {
+    filteredNews = filteredNews.filter(article => article.category === selectedCategory)
+  }
+  
+  // Sort news
+  switch (sortBy) {
+    case 'newest':
+      filteredNews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      break
+    case 'oldest':
+      filteredNews.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      break
+    case 'popular':
+      filteredNews.sort((a, b) => (b.views || 0) - (a.views || 0))
+      break
+    case 'title':
+      filteredNews.sort((a, b) => a.title.localeCompare(b.title))
+      break
+    default:
+      break
+  }
+  
+  const categories = [...new Set(news.map(article => article.category).filter(Boolean))]
+
+  return (
+    <div className="news-tab">
+      <div className="tab-header">
+        <h1>📰 مدیریت اخبار</h1>
+        <div style={{ display: 'flex', gap: '15px' }}>
+          <button className="danger-btn" onClick={handleBulkDelete}>
+            🗑️ حذف همه
+          </button>
+          <button className="primary-btn" onClick={handleExportNews}>
+            📤 خروجی JSON
+          </button>
+          <button className="primary-btn" onClick={onCreate}>
+            ➕ خبر جدید
+          </button>
+        </div>
+      </div>
+      
+      {/* Advanced Filters */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+        gap: '20px', 
+        marginBottom: '30px',
+        padding: '30px',
+        background: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: '20px',
+        border: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <div>
+          <input
+            type="text"
+            placeholder="جستجو در اخبار..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '15px 20px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '2px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '15px',
+              color: '#fff',
+              fontSize: '16px'
+            }}
+          />
+        </div>
+        
+        <div>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '15px 20px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '2px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '15px',
+              color: '#fff',
+              fontSize: '16px'
+            }}
+          >
+            <option value="all">همه دسته‌ها</option>
+            {categories.map(category => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '15px 20px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '2px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '15px',
+              color: '#fff',
+              fontSize: '16px'
+            }}
+          >
+            <option value="newest">جدیدترین</option>
+            <option value="oldest">قدیمی‌ترین</option>
+            <option value="popular">محبوب‌ترین</option>
+            <option value="title">بر اساس عنوان</option>
+          </select>
+        </div>
+      </div>
+      
+      {/* News Statistics */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '20px',
+        marginBottom: '30px'
+      }}>
+        <div style={{
+          padding: '25px',
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4ecdc4', marginBottom: '10px' }}>
+            {news.length}
+          </div>
+          <div style={{ color: '#c5c5c5' }}>کل اخبار</div>
+        </div>
+        
+        <div style={{
+          padding: '25px',
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ffb527', marginBottom: '10px' }}>
+            {news.filter(n => n.is_featured).length}
+          </div>
+          <div style={{ color: '#c5c5c5' }}>اخبار ویژه</div>
+        </div>
+        
+        <div style={{
+          padding: '25px',
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#13c8ff', marginBottom: '10px' }}>
+            {news.reduce((sum, n) => sum + (n.views || 0), 0)}
+          </div>
+          <div style={{ color: '#c5c5c5' }}>کل بازدیدها</div>
+        </div>
+        
+        <div style={{
+          padding: '25px',
+          background: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ff6b6b', marginBottom: '10px' }}>
+            {categories.length}
+          </div>
+          <div style={{ color: '#c5c5c5' }}>دسته‌بندی‌ها</div>
+        </div>
+      </div>
+      
+      <div className="news-admin-grid">
+        {filteredNews.length === 0 ? (
+          <div className="empty-state">
+            <p>{searchTerm || selectedCategory !== 'all' ? 'خبری با این فیلترها یافت نشد' : 'هنوز خبری اضافه نشده است'}</p>
+          </div>
+        ) : (
+          filteredNews.map((article) => (
+            <div key={article.id} className="news-admin-card">
+              <div className="news-admin-image">
+                <img
+                  src={article.image || "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg"}
+                  alt={article.title}
+                  onError={(e) => {
+                    e.target.src = "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg"
+                  }}
+                />
+                {article.is_featured && <span className="featured-badge">⭐ ویژه</span>}
+              </div>
+              <div className="news-admin-info">
+                <h3>{article.title}</h3>
+                <p>{article.excerpt.substring(0, 100)}...</p>
+                <div className="news-admin-meta">
+                  <span>📅 {new Date(article.created_at).toLocaleDateString('fa-IR')}</span>
+                  <span>👁️ {article.views || 0} بازدید</span>
+                  <span>📂 {article.category || 'عمومی'}</span>
+                  <span>✍️ {article.author || 'فان تک'}</span>
+                </div>
+              </div>
+              <div className="news-admin-actions">
+                <button 
+                  className={`featured-btn ${article.is_featured ? 'active' : ''}`}
+                  onClick={() => handleToggleFeatured(article.id, article.is_featured)}
+                  title={article.is_featured ? 'حذف از ویژه' : 'تنظیم به عنوان ویژه'}
+                >
+                  ⭐
+                </button>
+                <button className="edit-btn" onClick={() => onEdit(article)}>
+                  ✏️ ویرایش
+                </button>
+                <button className="delete-btn" onClick={() => handleDeleteNews(article.id)}>
+                  🗑️ حذف
+                </button>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
@@ -644,6 +960,163 @@ const ProductModal = ({ type, product, onClose }) => {
               <button type="button" className="add-btn" onClick={addImage}>
                 ➕ افزودن تصویر
               </button>
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" className="cancel-btn" onClick={onClose}>
+              لغو
+            </button>
+            <button type="submit" className="save-btn">
+              💾 ذخیره
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// News Modal Component
+const NewsModal = ({ type, news, onClose }) => {
+  const [formData, setFormData] = useState({
+    title: "",
+    excerpt: "",
+    content: "",
+    author: "",
+    category: "",
+    image: "",
+    is_featured: false,
+  })
+
+  useEffect(() => {
+    if (news && type === "edit-news") {
+      setFormData({
+        title: news.title || "",
+        excerpt: news.excerpt || "",
+        content: news.content || "",
+        author: news.author || "",
+        category: news.category || "",
+        image: news.image || "",
+        is_featured: news.is_featured || false,
+      })
+    }
+  }, [news, type])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+
+    if (type === "create-news") {
+      // If setting as featured, remove featured from others
+      if (formData.is_featured) {
+        const allNews = db.getNews()
+        allNews.forEach(n => {
+          if (n.is_featured) {
+            db.updateNews(n.id, { is_featured: false })
+          }
+        })
+      }
+      
+      db.createNews(formData)
+    } else if (type === "edit-news") {
+      // If setting as featured, remove featured from others
+      if (formData.is_featured && !news.is_featured) {
+        const allNews = db.getNews()
+        allNews.forEach(n => {
+          if (n.is_featured && n.id !== news.id) {
+            db.updateNews(n.id, { is_featured: false })
+          }
+        })
+      }
+      
+      db.updateNews(news.id, formData)
+    }
+
+    onClose()
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{type === "create-news" ? "➕ خبر جدید" : "✏️ ویرایش خبر"}</h2>
+          <button className="close-btn" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="modal-form">
+          <div className="form-sections">
+            <div className="form-section">
+              <h3>📝 اطلاعات خبر</h3>
+              <div className="form-group">
+                <label>عنوان خبر:</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>خلاصه خبر:</label>
+                <textarea
+                  value={formData.excerpt}
+                  onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                  rows={3}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>متن کامل خبر:</label>
+                <textarea
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  rows={8}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h3>📋 اطلاعات تکمیلی</h3>
+              <div className="form-group">
+                <label>نویسنده:</label>
+                <input
+                  type="text"
+                  value={formData.author}
+                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
+                  placeholder="نام نویسنده (اختیاری)"
+                />
+              </div>
+              <div className="form-group">
+                <label>دسته‌بندی:</label>
+                <input
+                  type="text"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  placeholder="دسته‌بندی خبر"
+                />
+              </div>
+              <div className="form-group">
+                <label>تصویر خبر:</label>
+                <input
+                  type="url"
+                  value={formData.image}
+                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+              <div className="form-group checkbox-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={formData.is_featured}
+                    onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                  />
+                  خبر ویژه (فقط یک خبر می‌تواند ویژه باشد)
+                </label>
+              </div>
             </div>
           </div>
 

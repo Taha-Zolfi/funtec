@@ -8,6 +8,7 @@ class ReactDatabase {
       specifications: "react_specifications",
       reviews: "react_reviews",
       images: "react_images",
+      news: "react_news",
     }
     this.initializeData()
   }
@@ -25,6 +26,11 @@ class ReactDatabase {
     // Add sample data if no products exist
     if (this.getProducts().length === 0) {
       this.createSampleData()
+    }
+    
+    // Add sample news if no news exist
+    if (this.getNews().length === 0) {
+      this.createSampleNews()
     }
   }
 
@@ -110,6 +116,65 @@ class ReactDatabase {
       ]
       
       reviews.forEach(review => this.createReview(review))
+    })
+  }
+
+  createSampleNews() {
+    const sampleNews = [
+      {
+        title: "افتتاح بزرگترین پارک شهربازی کشور",
+        excerpt: "پارک شهربازی جدید با مساحت ۵ هزار متر مربع و تجهیزات مدرن فان تک افتتاح شد",
+        content: "پارک شهربازی جدید شهر تهران با استفاده از جدیدترین تجهیزات شهربازی فان تک افتتاح شد. این پارک با مساحت ۵ هزار متر مربع شامل انواع تجهیزات بازی برای کودکان مختلف سنین می‌باشد.\n\nاین پروژه در مدت ۶ ماه اجرا شده و شامل سرسره‌های مدرن، تاب‌های ایمن، خانه‌های بازی و تجهیزات ورزشی متنوع است. تمام تجهیزات با استانداردهای بین‌المللی CE و EN1176 تولید شده‌اند.",
+        author: "تیم فان تک",
+        category: "پروژه‌ها",
+        image: "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg",
+        is_featured: true,
+        views: 245
+      },
+      {
+        title: "معرفی محصولات جدید سال ۱۴۰۳",
+        excerpt: "مجموعه جدیدی از تجهیزات شهربازی با طراحی نوآورانه و ایمنی بالا معرفی شد",
+        content: "فان تک مفتخر است تا مجموعه جدیدی از محصولات خود را برای سال ۱۴۰۳ معرفی کند. این محصولات شامل سرسره‌های چند منظوره، تاب‌های فنری جدید و مجموعه‌های ترکیبی هیجان‌انگیز می‌باشد.\n\nتمام محصولات جدید با تکنولوژی روز دنیا و با در نظر گیری نیازهای کودکان ایرانی طراحی شده‌اند.",
+        author: "واحد تحقیق و توسعه",
+        category: "محصولات",
+        image: "https://images.pexels.com/photos/1094072/pexels-photo-1094072.jpeg",
+        is_featured: false,
+        views: 189
+      },
+      {
+        title: "دریافت گواهینامه استاندارد اروپایی CE",
+        excerpt: "فان تک موفق به دریافت گواهینامه معتبر CE برای تمام محصولات خود شد",
+        content: "شرکت فان تک با افتخار اعلام می‌کند که موفق به دریافت گواهینامه استاندارد اروپایی CE برای تمام محصولات خود شده است. این گواهینامه نشان‌دهنده کیفیت بالا و ایمنی مطلق محصولات ما است.\n\nاین دستاورد نتیجه سال‌ها تلاش و سرمایه‌گذاری در بخش کیفیت و ایمنی محصولات است.",
+        author: "مدیریت کیفیت",
+        category: "اخبار شرکت",
+        image: "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg",
+        is_featured: false,
+        views: 156
+      },
+      {
+        title: "همکاری با شهرداری‌های سراسر کشور",
+        excerpt: "قراردادهای جدید با شهرداری‌های مختلف برای توسعه پارک‌های شهری منعقد شد",
+        content: "فان تک قراردادهای مهمی با شهرداری‌های تهران، اصفهان، مشهد و شیراز برای توسعه و بهسازی پارک‌های شهری منعقد کرده است.\n\nاین پروژه‌ها شامل نصب تجهیزات جدید، بازسازی فضاهای موجود و ایجاد مناطق بازی ایمن برای کودکان است.",
+        author: "واحد فروش",
+        category: "همکاری‌ها",
+        image: "https://images.pexels.com/photos/1094072/pexels-photo-1094072.jpeg",
+        is_featured: false,
+        views: 203
+      },
+      {
+        title: "کارگاه آموزشی ایمنی برای مربیان",
+        excerpt: "برگزاری کارگاه تخصصی آموزش ایمنی و نگهداری تجهیزات شهربازی",
+        content: "فان تک کارگاه آموزشی تخصصی برای مربیان و مسئولان پارک‌های شهری برگزار کرد. در این کارگاه نحوه استفاده صحیح از تجهیزات، نکات ایمنی و روش‌های نگهداری آموزش داده شد.\n\nاین کارگاه‌ها به صورت ماهانه برگزار می‌شود و برای تمام مشتریان رایگان است.",
+        author: "واحد آموزش",
+        category: "آموزش",
+        image: "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg",
+        is_featured: false,
+        views: 134
+      }
+    ]
+
+    sampleNews.forEach(newsData => {
+      this.createNews(newsData)
     })
   }
 
@@ -434,6 +499,64 @@ class ReactDatabase {
       localStorage.removeItem(table)
     })
     this.initializeData()
+  }
+
+  // News CRUD
+  getNews() {
+    return this.getData(this.tables.news)
+  }
+
+  getNewsById(id) {
+    const news = this.getNews()
+    return news.find((n) => n.id === parseInt(id))
+  }
+
+  createNews(newsData) {
+    const news = this.getNews()
+    const newNews = {
+      ...newsData,
+      id: this.generateId(this.tables.news),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      views: newsData.views || 0,
+    }
+    news.push(newNews)
+    this.saveData(this.tables.news, news)
+    return newNews
+  }
+
+  updateNews(id, newsData) {
+    const news = this.getNews()
+    const index = news.findIndex((n) => n.id === parseInt(id))
+    if (index === -1) return null
+
+    news[index] = {
+      ...news[index],
+      ...newsData,
+      updated_at: new Date().toISOString(),
+    }
+    this.saveData(this.tables.news, news)
+    return news[index]
+  }
+
+  deleteNews(id) {
+    const news = this.getNews()
+    const filteredNews = news.filter((n) => n.id !== parseInt(id))
+    this.saveData(this.tables.news, filteredNews)
+    return true
+  }
+
+  // Search news
+  searchNews(query) {
+    if (!query) return []
+
+    const news = this.getNews()
+    return news.filter(
+      (n) =>
+        n.title.toLowerCase().includes(query.toLowerCase()) ||
+        n.excerpt.toLowerCase().includes(query.toLowerCase()) ||
+        n.content.toLowerCase().includes(query.toLowerCase())
+    )
   }
 }
 

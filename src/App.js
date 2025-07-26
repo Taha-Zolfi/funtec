@@ -10,6 +10,10 @@ import ProductDetail from "./components/Products/ProductDetail";
 import AdminPanel from "./components/Admin/AdminPanel";
 import Loading from "./components/Loading/Loading";
 
+import News from "./components/News/News";
+import NewsDetail from "./components/News/NewsDetails";
+
+
 const MainPage = () => {
 
   return (
@@ -46,6 +50,8 @@ function App() {
           <Route path="/products" element={<Products />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/news" element={<News />} />
+          <Route path="/news/:id" element={<NewsDetail />} />
         </Routes>
       </div>
     </Router>

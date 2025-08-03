@@ -37,7 +37,7 @@ npm start
 ```
 
 ## 📸 Preview
-
+![Funtec firstpage](./public/ss.jpg)
 ![Funtec Logo](./public/logo.png)
 
 > Note: For best performance and 3D effects, please view the site on a modern browser with hardware acceleration enabled.

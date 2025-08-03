@@ -29,16 +29,11 @@ This project is a **semi-3D web platform** developed for **Funtec**, a company t
 | HTML/CSS | Styling and structure |
 | JavaScript | Client-side logic |
 
-## 📁 Project Structure (Partial)
+## 📁 How to Run the App?(without PHP backend)
 
 ```
-/public
-  └── logo.png       # Company logo
-
-/src
-  ├── components/    # React components including 3D elements
-  ├── assets/        # Static assets
-  └── App.jsx        # Main entry point
+npm install
+npm start
 ```
 
 ## 📸 Preview
@@ -51,7 +46,7 @@ This project is a **semi-3D web platform** developed for **Funtec**, a company t
 
 ## 📬 Contact
 
-If you'd like to collaborate or have questions, feel free to reach out or visit our website.
+If you'd like to collaborate or have questions, feel free to reach out or visit my website.
 
 ---
 

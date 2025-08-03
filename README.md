@@ -1,70 +1,58 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# 🎡 Funtec — Semi-3D Amusement Equipment Showcase Website
 
-## Available Scripts
+Welcome to the official repository of **Funtec**, an interactive, semi-3D web experience for showcasing amusement park products built by the Funtec company.
 
-In the project directory, you can run:
+## 🌐 Live Website
 
-### `npm start`
+Visit: [https://funtec.ir](https://funtec.ir)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 🧠 About the Project
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+This project is a **semi-3D web platform** developed for **Funtec**, a company that designs and sells amusement park equipment. It uses cutting-edge web technologies to provide a modern, engaging experience that reflects the excitement and energy of our physical products.
 
-### `npm test`
+### 🎯 Features
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+- 🌀 **Interactive 3D visuals** built using [Three.js](https://threejs.org/)
+- ⚛️ **React.js** front-end with dynamic components and routing
+- 🐘 **PHP** backend for handling content and server-side logic
+- 🖼️ Eye-catching visuals that represent our brand and products
+- 📱 Fully responsive design
 
-### `npm run build`
+## 🖥️ Tech Stack
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+| Technology | Role |
+|------------|------|
+| [Three.js](https://threejs.org/) | Real-time 3D rendering |
+| [React.js](https://react.dev/) | Frontend framework |
+| [PHP](https://www.php.net/) | Backend/server-side logic |
+| HTML/CSS | Styling and structure |
+| JavaScript | Client-side logic |
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 📁 Project Structure (Partial)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```
+/public
+  └── logo.png       # Company logo
 
-### `npm run eject`
+/src
+  ├── components/    # React components including 3D elements
+  ├── assets/        # Static assets
+  └── App.jsx        # Main entry point
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 📸 Preview
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+![Funtec Logo](./public/logo.png)
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+> Note: For best performance and 3D effects, please view the site on a modern browser with hardware acceleration enabled.
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## 📬 Contact
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+If you'd like to collaborate or have questions, feel free to reach out or visit our website.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Built with ❤️ by [Taha Zolfi](https://taha-zolfi.github.io/site/)

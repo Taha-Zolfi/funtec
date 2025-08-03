@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import "./App.css";
 import Home from "./components/Home/Home";
 import Nav from "./components/Nav/Nav";
@@ -9,13 +9,13 @@ import Products from "./components/Products/Products";
 import ProductDetail from "./components/Products/ProductDetail";
 import AdminPanel from "./components/Admin/AdminPanel";
 import Loading from "./components/Loading/Loading";
-
+import CustomCursor from "./components/CustomCursor/CustomCursor";
 import News from "./components/News/News";
 import NewsDetail from "./components/News/NewsDetails";
+import Services from "./components/services/services";
 
 
 const MainPage = () => {
-
   return (
     <>
       <Nav />
@@ -25,16 +25,49 @@ const MainPage = () => {
     </>
   );
 };
+const ProductPage = () => {
+  return (
+    <>
+      <Nav />
+        <Products />
+
+    </>
+  );
+};
+
+const NewsPage = () => {
+  return (
+    <>
+      <Nav />
+        <News />
+
+    </>
+  );
+};
+
+const ServicesPage = () => {
+  return (
+    <>
+      <Nav />
+        <Services />
+
+    </>
+  );
+};
+
+
+// تابع برای تشخیص موبایل
+const isMobileDevice = () => {
+  return /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
 
 function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading time for Three.js and other resources
     const timer = setTimeout(() => {
       setLoading(false);
-    }, 3000); // 3 seconds to match your loading time
-
+    }, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -45,13 +78,15 @@ function App() {
   return (
     <Router>
       <div className="App">
+        {!isMobileDevice() && <CustomCursor />}
         <Routes>
           <Route path="/" element={<MainPage />} />
-          <Route path="/products" element={<Products />} />
+          <Route path="/products" element={<ProductPage />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/admin" element={<AdminPanel />} />
-          <Route path="/news" element={<News />} />
+          <Route path="/news" element={<NewsPage />} />
           <Route path="/news/:id" element={<NewsDetail />} />
+          <Route path="/services" element={<ServicesPage />} />
         </Routes>
       </div>
     </Router>

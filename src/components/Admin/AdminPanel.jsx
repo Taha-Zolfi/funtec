@@ -1,1135 +1,917 @@
-import { useState, useEffect } from "react"
-import { db } from "../database/db.js"
-import "./AdminPanel.css"
+"use client"
 
+import { useState, useEffect } from "react"
+import { db } from "../../api" // Adjusted import path for flat structure
+import "./AdminPanel.css" // Import the CSS file
+
+// WARNING: Hardcoding passwords is a security risk. Use environment variables in production.
 const ADMIN_PASSWORD = "LaserTech2024!"
 
 const AdminPanel = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [password, setPassword] = useState("")
   const [activeTab, setActiveTab] = useState("dashboard")
-  const [products, setProducts] = useState([])
-  const [stats, setStats] = useState({})
-  const [selectedProduct, setSelectedProduct] = useState(null)
-  const [showModal, setShowModal] = useState(false)
-  const [modalType, setModalType] = useState("")
 
-  // Load data
+  const [products, setProducts] = useState([])
+  const [news, setNews] = useState([])
+  const [services, setServices] = useState([])
+  const [stats, setStats] = useState({})
+
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [selectedNews, setSelectedNews] = useState(null)
+  const [selectedService, setSelectedService] = useState(null)
+
+  const [productFormData, setProductFormData] = useState({
+    title: "",
+    description: "",
+    is_featured: false,
+    background_video: "",
+    features: [],
+    images: [],
+    specifications: [],
+    reviews: [],
+  })
+
+  const [newsFormData, setNewsFormData] = useState({
+    title: "",
+    excerpt: "",
+    content: "",
+    description: "",
+    author: "",
+    category: "",
+    image: "",
+    is_featured: false,
+    views: 0,
+  })
+
+  const [serviceFormData, setServiceFormData] = useState({
+    title: "",
+    description: "",
+    mainImage: "",
+  })
+
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    const storedAuth = localStorage.getItem("isAuthenticated")
+    if (storedAuth === "true") {
+      setIsAuthenticated(true)
+    }
+  }, [])
+
   useEffect(() => {
     if (isAuthenticated) {
       loadData()
     }
-  }, [isAuthenticated])
-
-  const loadData = () => {
-    setProducts(db.getProducts())
-    setStats(db.getStats())
-  }
+  }, [isAuthenticated, activeTab])
 
   const handleLogin = (e) => {
     e.preventDefault()
     if (password === ADMIN_PASSWORD) {
       setIsAuthenticated(true)
-      setPassword("")
+      localStorage.setItem("isAuthenticated", "true")
+      setError(null)
     } else {
-      alert("رمز عبور اشتباه است!")
+      setError("رمز عبور اشتباه است.")
     }
   }
 
   const handleLogout = () => {
     setIsAuthenticated(false)
+    localStorage.removeItem("isAuthenticated")
     setPassword("")
-  }
-
-  const openModal = (type, product = null) => {
-    setModalType(type)
-    setSelectedProduct(product)
-    setShowModal(true)
-  }
-
-  const closeModal = () => {
-    setShowModal(false)
+    setProducts([])
+    setNews([])
+    setServices([])
+    setStats({})
     setSelectedProduct(null)
-    setModalType("")
-    loadData()
+    setSelectedNews(null)
+    setSelectedService(null)
+    resetProductForm()
+    resetNewsForm()
+    resetServiceForm()
   }
 
-  const handleClearAllData = () => {
-    if (window.confirm("آیا مطمئن هستید؟ تمام داده‌ها پاک خواهد شد!")) {
-      db.clearAllData()
-      loadData()
+  const loadData = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const fetchedProducts = await db.getProducts()
+      const fetchedNews = await db.getNews()
+      const fetchedServices = await db.getServices()
+      const fetchedStats = await db.getStats()
+
+      setProducts(fetchedProducts)
+      setNews(fetchedNews)
+      setServices(fetchedServices)
+      setStats(fetchedStats)
+    } catch (err) {
+      let errorMessage = `خطا در بارگذاری اطلاعات: ${err.message}`
+      if (err.message.includes("Unexpected token")) {
+        errorMessage = "خطا در ارتباط با سرور: پاسخ دریافتی یک JSON معتبر نیست. لطفاً فایل‌های سرور (PHP) را بررسی کنید."
+      }
+      setError(errorMessage)
+      console.error("Failed to load data:", err)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleDeleteProduct = (id) => {
-    if (window.confirm("آیا مطمئن هستید؟")) {
-      db.deleteProduct(id)
-      loadData()
+  // --- Product Form Handlers ---
+  const handleProductInputChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setProductFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }))
+  }
+
+  const createDynamicHandlers = (fieldName, formType = "product") => {
+    const setFormData = formType === "product" ? setProductFormData : setServiceFormData
+    const formData = formType === "product" ? productFormData : serviceFormData
+
+    return {
+      handleChange: (index, value) => {
+        const newItems = [...formData[fieldName]]
+        newItems[index] = value
+        setFormData((prev) => ({ ...prev, [fieldName]: newItems }))
+      },
+      handleAdd: () => {
+        setFormData((prev) => ({ ...prev, [fieldName]: [...prev[fieldName], ""] }))
+      },
+      handleRemove: (index) => {
+        const newItems = formData[fieldName].filter((_, i) => i !== index)
+        setFormData((prev) => ({ ...prev, [fieldName]: newItems }))
+      },
     }
   }
 
-  // Login Form
+  const productFeaturesHandlers = createDynamicHandlers("features", "product")
+  const productImagesHandlers = createDynamicHandlers("images", "product")
+  const productSpecificationsHandlers = createDynamicHandlers("specifications", "product")
+  const productReviewsHandlers = createDynamicHandlers("reviews", "product")
+
+  const handleProductFileChange = async (e, fieldName) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setLoading(true)
+    try {
+      const result = await db.uploadFile(file)
+      if (fieldName === "image_file") {
+        setProductFormData((prev) => ({
+          ...prev,
+          images: [...prev.images, result.url],
+        }))
+      } else if (fieldName === "video_file") {
+        setProductFormData((prev) => ({
+          ...prev,
+          background_video: result.url,
+        }))
+      }
+      setError(null)
+    } catch (err) {
+      setError(`خطا در آپلود فایل: ${err.message}`)
+      console.error("File upload error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmitProduct = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      if (selectedProduct && selectedProduct.id) {
+        await db.updateProduct(selectedProduct.id, productFormData)
+      } else {
+        await db.createProduct(productFormData)
+      }
+      setSelectedProduct(null)
+      resetProductForm()
+      loadData()
+    } catch (err) {
+      setError(`خطا در ذخیره محصول: ${err.message}`)
+      console.error("Error saving product:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCancelProductEdit = () => {
+    setSelectedProduct(null)
+    resetProductForm()
+  }
+
+  const handleAddProduct = () => {
+    setSelectedProduct({})
+    resetProductForm()
+  }
+
+  const handleEditProduct = (product) => {
+    setSelectedProduct(product)
+    setProductFormData({
+      ...product,
+      is_featured: Boolean(product.is_featured),
+      features: Array.isArray(product.features) ? product.features : [],
+      images: Array.isArray(product.images) ? product.images : [],
+      specifications:
+        typeof product.specifications === "string" && product.specifications ? product.specifications.split(",") : [],
+      reviews: typeof product.reviews === "string" && product.reviews ? product.reviews.split(",") : [],
+    })
+  }
+
+  const handleDeleteProduct = async (id) => {
+    setLoading(true)
+    setError(null)
+    if (window.confirm("آیا مطمئنید که می‌خواهید این محصول را حذف کنید؟")) {
+      try {
+        await db.deleteProduct(id)
+        loadData()
+      } catch (err) {
+        setError(`خطا در حذف محصول: ${err.message}`)
+        console.error("Error deleting product:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  const resetProductForm = () => {
+    setProductFormData({
+      title: "",
+      description: "",
+      is_featured: false,
+      background_video: "",
+      features: [],
+      images: [],
+      specifications: [],
+      reviews: [],
+    })
+  }
+
+  // --- News Form Handlers ---
+  const handleNewsInputChange = (e) => {
+    const { name, value, type, checked } = e.target
+    setNewsFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? (checked ? 1 : 0) : value,
+    }))
+  }
+
+  const handleNewsFileChange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setLoading(true)
+    try {
+      const result = await db.uploadFile(file)
+      setNewsFormData((prev) => ({
+        ...prev,
+        image: result.url,
+      }))
+      setError(null)
+    } catch (err) {
+      setError(`خطا در آپلود عکس خبر: ${err.message}`)
+      console.error("News image upload error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmitNews = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      if (selectedNews && selectedNews.id) {
+        await db.updateNews(selectedNews.id, newsFormData)
+      } else {
+        await db.createNews(newsFormData)
+      }
+      setSelectedNews(null)
+      resetNewsForm()
+      loadData()
+    } catch (err) {
+      setError(`خطا در ذخیره خبر: ${err.message}`)
+      console.error("Error saving news:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCancelNewsEdit = () => {
+    setSelectedNews(null)
+    resetNewsForm()
+  }
+
+  const handleAddNews = () => {
+    setSelectedNews({})
+    resetNewsForm()
+  }
+
+  const handleEditNews = (newsItem) => {
+    setSelectedNews(newsItem)
+    setNewsFormData({
+      ...newsItem,
+      is_featured: Boolean(newsItem.is_featured),
+    })
+  }
+
+  const handleDeleteNews = async (id) => {
+    setLoading(true)
+    setError(null)
+    if (window.confirm("آیا مطمئنید که می‌خواهید این خبر را حذف کنید؟")) {
+      try {
+        await db.deleteNews(id)
+        loadData()
+      } catch (err) {
+        setError(`خطا در حذف خبر: ${err.message}`)
+        console.error("Error deleting news:", err)
+      } finally {
+      }
+    }
+  }
+
+  const resetNewsForm = () => {
+    setNewsFormData({
+      title: "",
+      excerpt: "",
+      content: "",
+      description: "",
+      author: "",
+      category: "",
+      image: "",
+      is_featured: false,
+      views: 0,
+    })
+  }
+
+  // --- Service Form Handlers ---
+  const handleServiceInputChange = (e) => {
+    const { name, value } = e.target
+    setServiceFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleServiceFileChange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setLoading(true)
+    try {
+      const result = await db.uploadFile(file)
+      setServiceFormData((prev) => ({
+        ...prev,
+        mainImage: result.url,
+      }))
+      setError(null)
+    } catch (err) {
+      setError(`خطا در آپلود فایل: ${err.message}`)
+      console.error("File upload error:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmitService = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    try {
+      if (selectedService && selectedService.id) {
+        await db.updateService(selectedService.id, serviceFormData)
+      } else {
+        await db.createService(serviceFormData)
+      }
+      setSelectedService(null)
+      resetServiceForm()
+      loadData()
+    } catch (err) {
+      setError(`خطا در ذخیره خدمت: ${err.message}`)
+      console.error("Error saving service:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCancelServiceEdit = () => {
+    setSelectedService(null)
+    resetServiceForm()
+  }
+
+  const handleAddService = () => {
+    setSelectedService({})
+    resetServiceForm()
+  }
+
+  const handleEditService = (service) => {
+    setSelectedService(service)
+    setServiceFormData({
+      title: service.title,
+      description: service.description,
+      mainImage: service.mainImage,
+    })
+  }
+
+  const handleDeleteService = async (id) => {
+    setLoading(true)
+    setError(null)
+    if (window.confirm("آیا مطمئنید که می‌خواهید این خدمت را حذف کنید؟")) {
+      try {
+        await db.deleteService(id)
+        loadData()
+      } catch (err) {
+        setError(`خطا در حذف خدمت: ${err.message}`)
+        console.error("Error deleting service:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+  }
+
+  const resetServiceForm = () => {
+    setServiceFormData({
+      title: "",
+      description: "",
+      mainImage: "",
+    })
+  }
+
+  const DynamicInputList = ({ label, items, handlers, placeholder }) => (
+    <div className="form-group">
+      <label>{label}:</label>
+      {items.map((item, index) => (
+        <div key={index} className="dynamic-input-group">
+          <input
+            type="text"
+            value={item}
+            onChange={(e) => handlers.handleChange(index, e.target.value)}
+            placeholder={placeholder}
+          />
+          <button type="button" onClick={() => handlers.handleRemove(index)} className="remove-button">
+            &times;
+          </button>
+        </div>
+      ))}
+      <button type="button" onClick={handlers.handleAdd} className="add-item-button">
+        + افزودن {label}
+      </button>
+    </div>
+  )
+
   if (!isAuthenticated) {
     return (
       <div className="login-container">
-        <div className="login-form">
-          <h2>🔐 ورود به پنل مدیریت</h2>
-          <p className="password-hint">
-            رمز عبور: <code>{ADMIN_PASSWORD}</code>
-          </p>
-          <form onSubmit={handleLogin}>
+        <form className="login-form" onSubmit={handleLogin}>
+          <h2>ورود به پنل مدیریت</h2>
+          <div className="form-group">
+            <label htmlFor="password">رمز عبور:</label>
             <input
               type="password"
-              placeholder="رمز عبور را وارد کنید"
+              id="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <button type="submit">ورود</button>
-          </form>
-        </div>
+          </div>
+          {error && <p className="error-message">{error}</p>}
+          <button type="submit" className="login-btn">
+            ورود
+          </button>
+          <p className="password-hint">رمز عبور: LaserTech2024!</p>
+        </form>
       </div>
     )
   }
 
   return (
     <div className="admin-panel">
-      {/* Sidebar */}
-      <div className="admin-sidebar">
-        <div className="admin-logo">
-          <h2>🔧 Admin Panel</h2>
-          <button className="logout-btn" onClick={handleLogout}>
-            🚪 خروج
-          </button>
-        </div>
-        <nav className="admin-nav">
-          <button
-            className={`nav-item ${activeTab === "dashboard" ? "active" : ""}`}
-            onClick={() => setActiveTab("dashboard")}
-          >
-            📊 داشبورد
-          </button>
-          <button
-            className={`nav-item ${activeTab === "products" ? "active" : ""}`}
-            onClick={() => setActiveTab("products")}
-          >
-            📦 مدیریت محصولات
-          </button>
-          <button
-            className={`nav-item ${activeTab === "reviews" ? "active" : ""}`}
-            onClick={() => setActiveTab("reviews")}
-          >
-            💬 نظرات
-          </button>
-          <button
-            className={`nav-item ${activeTab === "news" ? "active" : ""}`}
-            onClick={() => setActiveTab("news")}
-          >
-            📰 مدیریت اخبار
-          </button>
-        </nav>
-        <div className="admin-actions">
-          <button className="danger-btn" onClick={handleClearAllData}>
-            🗑️ پاک کردن همه
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="admin-content">
-        {activeTab === "dashboard" && <Dashboard stats={stats} />}
+      <header className="header">
+        <h1>پنل مدیریت</h1>
+        <button onClick={handleLogout} className="logout-button">
+          خروج
+        </button>
+      </header>
+      <nav className="sidebar">
+        <ul>
+          <li onClick={() => setActiveTab("dashboard")} className={activeTab === "dashboard" ? "active" : ""}>
+            داشبورد
+          </li>
+          <li onClick={() => setActiveTab("products")} className={activeTab === "products" ? "active" : ""}>
+            مدیریت محصولات
+          </li>
+          <li onClick={() => setActiveTab("news")} className={activeTab === "news" ? "active" : ""}>
+            مدیریت اخبار
+          </li>
+          <li onClick={() => setActiveTab("services")} className={activeTab === "services" ? "active" : ""}>
+            مدیریت خدمات
+          </li>
+        </ul>
+      </nav>
+      <main className="main-content">
+        {loading && <div className="loading-spinner"></div>}
+        {error && <div className="error-alert">{error}</div>}
+        {activeTab === "dashboard" && (
+          <div className="dashboard-section">
+            <h2>داشبورد</h2>
+            <div className="stats-cards">
+              <div className="card">
+                <h3>تعداد کل محصولات</h3>
+                <p>{stats.total_products}</p>
+              </div>
+              <div className="card">
+                <h3>تعداد محصولات ویژه</h3>
+                <p>{stats.featured_products}</p>
+              </div>
+              <div className="card">
+                <h3>تعداد کل اخبار</h3>
+                <p>{stats.total_news}</p>
+              </div>
+              <div className="card">
+                <h3>تعداد کل خدمات</h3>
+                <p>{stats.total_services || services.length}</p>
+              </div>
+            </div>
+            <div className="latest-items">
+              <h3>آخرین محصولات</h3>
+              <ul>
+                {products.slice(0, 5).map((product) => (
+                  <li key={product.id}>{product.title}</li>
+                ))}
+              </ul>
+              <h3>آخرین اخبار</h3>
+              <ul>
+                {news.slice(0, 5).map((item) => (
+                  <li key={item.id}>{item.title}</li>
+                ))}
+              </ul>
+              <h3>آخرین خدمات</h3>
+              <ul>
+                {services.slice(0, 5).map((item) => (
+                  <li key={item.id}>{item.title}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
         {activeTab === "products" && (
-          <ProductsTab
-            products={products}
-            onEdit={(product) => openModal("edit-product", product)}
-            onCreate={() => openModal("create-product")}
-            onDelete={handleDeleteProduct}
-          />
-        )}
-        {activeTab === "reviews" && <ReviewsTab onRefresh={loadData} />}
-        {activeTab === "news" && (
-          <NewsTab
-            onEdit={(news) => openModal("edit-news", news)}
-            onCreate={() => openModal("create-news")}
-            onRefresh={loadData}
-          />
-        )}
-      </div>
-
-      {/* Modal */}
-      {showModal && (
-        <>
-          {(modalType === "create-product" || modalType === "edit-product") && (
-            <ProductModal type={modalType} product={selectedProduct} onClose={closeModal} />
-          )}
-          {(modalType === "create-news" || modalType === "edit-news") && (
-            <NewsModal type={modalType} news={selectedProduct} onClose={closeModal} />
-          )}
-        </>
-      )}
-    </div>
-  )
-}
-
-// Dashboard Component
-const Dashboard = ({ stats }) => (
-  <div className="dashboard">
-    <h1>📊 داشبورد</h1>
-    <div className="stats-grid">
-      <div className="stat-card">
-        <div className="stat-icon">📦</div>
-        <div className="stat-info">
-          <h3>{stats.total_products || 0}</h3>
-          <p>کل محصولات</p>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon">⭐</div>
-        <div className="stat-info">
-          <h3>{stats.featured_products || 0}</h3>
-          <p>محصولات ویژه</p>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon">💬</div>
-        <div className="stat-info">
-          <h3>{stats.total_reviews || 0}</h3>
-          <p>نظرات تایید شده</p>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon">🌟</div>
-        <div className="stat-info">
-          <h3>{stats.average_rating || 0}</h3>
-          <p>میانگین امتیاز</p>
-        </div>
-      </div>
-      <div className="stat-card">
-        <div className="stat-icon">📰</div>
-        <div className="stat-info">
-          <h3>{stats.total_news || 0}</h3>
-          <p>اخبار منتشر شده</p>
-        </div>
-      </div>
-    </div>
-    <div className="recent-activity">
-      <h2>فعالیت‌های اخیر</h2>
-      <div className="activity-list">
-        <div className="activity-item">
-          <span className="activity-icon">📦</span>
-          <span>محصول جدید اضافه شد</span>
-          <span className="activity-time">2 ساعت پیش</span>
-        </div>
-        <div className="activity-item">
-          <span className="activity-icon">💬</span>
-          <span>نظر جدید دریافت شد</span>
-          <span className="activity-time">5 ساعت پیش</span>
-        </div>
-        <div className="activity-item">
-          <span className="activity-icon">🖼️</span>
-          <span>تصویر جدید آپلود شد</span>
-          <span className="activity-time">1 روز پیش</span>
-        </div>
-      </div>
-    </div>
-  </div>
-)
-
-// Products Tab Component
-const ProductsTab = ({ products, onEdit, onCreate, onDelete }) => (
-  <div className="products-tab">
-    <div className="tab-header">
-      <h1>📦 مدیریت محصولات</h1>
-      <button className="primary-btn" onClick={onCreate}>
-        ➕ محصول جدید
-      </button>
-    </div>
-    <div className="products-grid">
-      {products.length === 0 ? (
-        <div className="empty-state">
-          <p>هنوز محصولی اضافه نشده است</p>
-        </div>
-      ) : (
-        products.map((product) => (
-          <div key={product.id} className="product-card">
-            <div className="product-image">
-              <img
-                src={db.getMainImage(product.id)}
-                alt={product.title}
-                onError={(e) => {
-                  e.target.src = "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg"
-                }}
-              />
-              {product.is_featured && <span className="featured-badge">⭐ ویژه</span>}
-            </div>
-            <div className="product-info">
-              <h3>{product.title}</h3>
-              <p>{product.description.substring(0, 100)}...</p>
-              <div className="product-stats">
-                <span>🏷️ {db.getFeaturesByProduct(product.id).length} ویژگی</span>
-                <span>📋 {db.getSpecificationsByProduct(product.id).length} مشخصه</span>
-                <span>🖼️ {db.getImagesByProduct(product.id).length} تصویر</span>
-              </div>
-            </div>
-            <div className="product-actions">
-              <button className="edit-btn" onClick={() => onEdit(product)}>
-                ✏️ ویرایش
-              </button>
-              <button className="delete-btn" onClick={() => onDelete(product.id)}>
-                🗑️ حذف
-              </button>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  </div>
-)
-
-// Reviews Tab Component
-const ReviewsTab = ({ onRefresh }) => {
-  const [reviews, setReviews] = useState([])
-  const [products, setProducts] = useState([])
-
-  useEffect(() => {
-    setReviews(db.getReviews())
-    setProducts(db.getProducts())
-  }, [])
-
-  const handleApproveReview = (id) => {
-    db.updateReview(id, { approved: true })
-    setReviews(db.getReviews())
-    onRefresh()
-  }
-
-  const handleDeleteReview = (id) => {
-    db.deleteReview(id)
-    setReviews(db.getReviews())
-    onRefresh()
-  }
-
-  const getProductName = (productId) => {
-    const product = products.find((p) => p.id === productId)
-    return product ? product.title : "محصول ناشناخته"
-  }
-
-  return (
-    <div className="reviews-tab">
-      <h1>💬 مدیریت نظرات</h1>
-      <div className="reviews-list">
-        {reviews.map((review) => (
-          <div key={review.id} className={`review-item ${review.approved ? "approved" : "pending"}`}>
-            <div className="review-header">
-              <h4>{review.author}</h4>
-              <div className="review-rating">{"⭐".repeat(review.rating)}</div>
-              <span className="review-product">{getProductName(review.product_id)}</span>
-            </div>
-            <div className="review-content">
-              <p>{review.comment}</p>
-            </div>
-            <div className="review-meta">
-              <span className="review-date">{new Date(review.created_at).toLocaleDateString("fa-IR")}</span>
-              <span className={`review-status ${review.approved ? "approved" : "pending"}`}>
-                {review.approved ? "✅ تایید شده" : "⏳ در انتظار تایید"}
-              </span>
-            </div>
-            <div className="review-actions">
-              {!review.approved && (
-                <button className="approve-btn" onClick={() => handleApproveReview(review.id)}>
-                  ✅ تایید
-                </button>
+          <div className="products-section">
+            <h2>مدیریت محصولات</h2>
+            <button className="add-button" onClick={handleAddProduct}>
+              افزودن محصول جدید
+            </button>
+            <ul className="item-list">
+              {products.length === 0 ? (
+                <p>هیچ محصولی ��افت نشد. می‌توانید یک محصول جدید اضافه کنید.</p>
+              ) : (
+                products.map((product) => (
+                  <li key={product.id}>
+                    <span>{product.title}</span>
+                    <div className="item-actions">
+                      <button onClick={() => handleEditProduct(product)}>ویرایش</button>
+                      <button onClick={() => handleDeleteProduct(product.id)}>حذف</button>
+                    </div>
+                  </li>
+                ))
               )}
-              <button className="delete-btn" onClick={() => handleDeleteReview(review.id)}>
-                🗑️ حذف
-              </button>
-            </div>
-          </div>
-        ))}
-        {reviews.length === 0 && (
-          <div className="empty-state">
-            <p>هنوز نظری ثبت نشده است</p>
+            </ul>
           </div>
         )}
-      </div>
-    </div>
-  )
-}
-
-// News Tab Component
-const NewsTab = ({ onEdit, onCreate, onRefresh }) => {
-  const [news, setNews] = useState([])
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState('all')
-  const [sortBy, setSortBy] = useState('newest')
-
-  useEffect(() => {
-    setNews(db.getNews())
-  }, [])
-
-  const handleDeleteNews = (id) => {
-    if (window.confirm("آیا مطمئن هستید؟")) {
-      db.deleteNews(id)
-      setNews(db.getNews())
-      onRefresh()
-    }
-  }
-
-  const handleToggleFeatured = (id, currentStatus) => {
-    // First, remove featured from all other news
-    if (!currentStatus) {
-      news.forEach(n => {
-        if (n.is_featured) {
-          db.updateNews(n.id, { is_featured: false })
-        }
-      })
-    }
-    
-    // Then toggle this news
-    db.updateNews(id, { is_featured: !currentStatus })
-    setNews(db.getNews())
-    onRefresh()
-  }
-  
-  const handleBulkDelete = () => {
-    if (window.confirm("آیا مطمئن هستید که می‌خواهید همه اخبار را حذف کنید؟")) {
-      news.forEach(article => db.deleteNews(article.id))
-      setNews([])
-      onRefresh()
-    }
-  }
-  
-  const handleExportNews = () => {
-    const dataStr = JSON.stringify(news, null, 2)
-    const dataBlob = new Blob([dataStr], {type: 'application/json'})
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'news-export.json'
-    link.click()
-  }
-  
-  // Filter and sort news
-  let filteredNews = news
-  
-  if (searchTerm) {
-    filteredNews = filteredNews.filter(article =>
-      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      article.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }
-  
-  if (selectedCategory !== 'all') {
-    filteredNews = filteredNews.filter(article => article.category === selectedCategory)
-  }
-  
-  // Sort news
-  switch (sortBy) {
-    case 'newest':
-      filteredNews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      break
-    case 'oldest':
-      filteredNews.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
-      break
-    case 'popular':
-      filteredNews.sort((a, b) => (b.views || 0) - (a.views || 0))
-      break
-    case 'title':
-      filteredNews.sort((a, b) => a.title.localeCompare(b.title))
-      break
-    default:
-      break
-  }
-  
-  const categories = [...new Set(news.map(article => article.category).filter(Boolean))]
-
-  return (
-    <div className="news-tab">
-      <div className="tab-header">
-        <h1>📰 مدیریت اخبار</h1>
-        <div style={{ display: 'flex', gap: '15px' }}>
-          <button className="danger-btn" onClick={handleBulkDelete}>
-            🗑️ حذف همه
-          </button>
-          <button className="primary-btn" onClick={handleExportNews}>
-            📤 خروجی JSON
-          </button>
-          <button className="primary-btn" onClick={onCreate}>
-            ➕ خبر جدید
-          </button>
-        </div>
-      </div>
-      
-      {/* Advanced Filters */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: '20px', 
-        marginBottom: '30px',
-        padding: '30px',
-        background: 'rgba(255, 255, 255, 0.05)',
-        borderRadius: '20px',
-        border: '1px solid rgba(255, 255, 255, 0.1)'
-      }}>
-        <div>
-          <input
-            type="text"
-            placeholder="جستجو در اخبار..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '15px 20px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '2px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '15px',
-              color: '#fff',
-              fontSize: '16px'
-            }}
-          />
-        </div>
-        
-        <div>
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '15px 20px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '2px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '15px',
-              color: '#fff',
-              fontSize: '16px'
-            }}
-          >
-            <option value="all">همه دسته‌ها</option>
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '15px 20px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '2px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '15px',
-              color: '#fff',
-              fontSize: '16px'
-            }}
-          >
-            <option value="newest">جدیدترین</option>
-            <option value="oldest">قدیمی‌ترین</option>
-            <option value="popular">محبوب‌ترین</option>
-            <option value="title">بر اساس عنوان</option>
-          </select>
-        </div>
-      </div>
-      
-      {/* News Statistics */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '20px',
-        marginBottom: '30px'
-      }}>
-        <div style={{
-          padding: '25px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '20px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4ecdc4', marginBottom: '10px' }}>
-            {news.length}
+        {activeTab === "news" && (
+          <div className="news-section">
+            <h2>مدیریت اخبار</h2>
+            <button className="add-button" onClick={handleAddNews}>
+              افزودن خبر جدید
+            </button>
+            <ul className="item-list">
+              {news.length === 0 ? (
+                <p>هیچ خبری یافت نشد. می‌توانید یک خبر جدید اضافه کنید.</p>
+              ) : (
+                news.map((item) => (
+                  <li key={item.id}>
+                    <span>{item.title}</span>
+                    <div className="item-actions">
+                      <button onClick={() => handleEditNews(item)}>ویرایش</button>
+                      <button onClick={() => handleDeleteNews(item.id)}>حذف</button>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
           </div>
-          <div style={{ color: '#c5c5c5' }}>کل اخبار</div>
-        </div>
-        
-        <div style={{
-          padding: '25px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '20px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ffb527', marginBottom: '10px' }}>
-            {news.filter(n => n.is_featured).length}
-          </div>
-          <div style={{ color: '#c5c5c5' }}>اخبار ویژه</div>
-        </div>
-        
-        <div style={{
-          padding: '25px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '20px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#13c8ff', marginBottom: '10px' }}>
-            {news.reduce((sum, n) => sum + (n.views || 0), 0)}
-          </div>
-          <div style={{ color: '#c5c5c5' }}>کل بازدیدها</div>
-        </div>
-        
-        <div style={{
-          padding: '25px',
-          background: 'rgba(255, 255, 255, 0.05)',
-          borderRadius: '20px',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#ff6b6b', marginBottom: '10px' }}>
-            {categories.length}
-          </div>
-          <div style={{ color: '#c5c5c5' }}>دسته‌بندی‌ها</div>
-        </div>
-      </div>
-      
-      <div className="news-admin-grid">
-        {filteredNews.length === 0 ? (
-          <div className="empty-state">
-            <p>{searchTerm || selectedCategory !== 'all' ? 'خبری با این فیلترها یافت نشد' : 'هنوز خبری اضافه نشده است'}</p>
-          </div>
-        ) : (
-          filteredNews.map((article) => (
-            <div key={article.id} className="news-admin-card">
-              <div className="news-admin-image">
-                <img
-                  src={article.image || "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg"}
-                  alt={article.title}
-                  onError={(e) => {
-                    e.target.src = "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg"
-                  }}
-                />
-                {article.is_featured && <span className="featured-badge">⭐ ویژه</span>}
-              </div>
-              <div className="news-admin-info">
-                <h3>{article.title}</h3>
-                <p>{article.excerpt.substring(0, 100)}...</p>
-                <div className="news-admin-meta">
-                  <span>📅 {new Date(article.created_at).toLocaleDateString('fa-IR')}</span>
-                  <span>👁️ {article.views || 0} بازدید</span>
-                  <span>📂 {article.category || 'عمومی'}</span>
-                  <span>✍️ {article.author || 'فان تک'}</span>
-                </div>
-              </div>
-              <div className="news-admin-actions">
-                <button 
-                  className={`featured-btn ${article.is_featured ? 'active' : ''}`}
-                  onClick={() => handleToggleFeatured(article.id, article.is_featured)}
-                  title={article.is_featured ? 'حذف از ویژه' : 'تنظیم به عنوان ویژه'}
-                >
-                  ⭐
-                </button>
-                <button className="edit-btn" onClick={() => onEdit(article)}>
-                  ✏️ ویرایش
-                </button>
-                <button className="delete-btn" onClick={() => handleDeleteNews(article.id)}>
-                  🗑️ حذف
-                </button>
-              </div>
-            </div>
-          ))
         )}
-      </div>
-    </div>
-  )
-}
-
-// Enhanced Product Modal Component
-const ProductModal = ({ type, product, onClose }) => {
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    background_video: "",
-    is_featured: false,
-    features: [{ name: "", value: "", order: 1 }],
-    specifications: [{ name: "", value: "", order: 1 }],
-    images: [{ image: "", alt_text: "", order: 1, is_main: true }],
-  })
-
-  useEffect(() => {
-    if (product && type === "edit-product") {
-      const existingFeatures = db.getFeaturesByProduct(product.id)
-      const existingSpecs = db.getSpecificationsByProduct(product.id)
-      const existingImages = db.getImagesByProduct(product.id)
-
-      setFormData({
-        title: product.title || "",
-        description: product.description || "",
-        background_video: product.background_video || "",
-        is_featured: product.is_featured || false,
-        features: existingFeatures.length > 0 ? existingFeatures : [{ name: "", value: "", order: 1 }],
-        specifications: existingSpecs.length > 0 ? existingSpecs : [{ name: "", value: "", order: 1 }],
-        images: existingImages.length > 0 ? existingImages : [{ image: "", alt_text: "", order: 1, is_main: true }],
-      })
-    }
-  }, [product, type])
-
-  const addFeature = () => {
-    setFormData({
-      ...formData,
-      features: [...formData.features, { value: "" }],
-    })
-  }
-
-  const removeFeature = (index) => {
-    const newFeatures = formData.features.filter((_, i) => i !== index)
-    setFormData({ ...formData, features: newFeatures })
-  }
-
-  const addSpecification = () => {
-    setFormData({
-      ...formData,
-      specifications: [...formData.specifications, { name: "", value: "", order: formData.specifications.length + 1 }],
-    })
-  }
-
-  const removeSpecification = (index) => {
-    const newSpecs = formData.specifications.filter((_, i) => i !== index)
-    setFormData({ ...formData, specifications: newSpecs })
-  }
-
-  const addImage = () => {
-    setFormData({
-      ...formData,
-      images: [...formData.images, { image: "", alt_text: "", order: formData.images.length + 1, is_main: false }],
-    })
-  }
-
-  const removeImage = (index) => {
-    const newImages = formData.images.filter((_, i) => i !== index)
-    setFormData({ ...formData, images: newImages })
-  }
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    let productId
-    if (type === "create-product") {
-      const newProduct = db.createProduct({
-        title: formData.title,
-        description: formData.description,
-        background_video: formData.background_video,
-        is_featured: formData.is_featured,
-      })
-      productId = newProduct.id
-    } else if (type === "edit-product") {
-      db.updateProduct(product.id, {
-        title: formData.title,
-        description: formData.description,
-        background_video: formData.background_video,
-        is_featured: formData.is_featured,
-      })
-      productId = product.id
-
-      // Clear existing features, specs, and images
-      db.deleteFeaturesByProduct(productId)
-      db.deleteSpecificationsByProduct(productId)
-      db.deleteImagesByProduct(productId)
-    }
-
-    // Add features
-    formData.features.forEach((feature) => {
-      if (feature.name && feature.value) {
-        db.createFeature({
-          ...feature,
-          product_id: productId,
-        })
-      }
-    })
-
-    // Add specifications
-    formData.specifications.forEach((spec) => {
-      if (spec.name && spec.value) {
-        db.createSpecification({
-          ...spec,
-          product_id: productId,
-        })
-      }
-    })
-
-    // Add images
-    formData.images.forEach((image) => {
-      if (image.image) {
-        db.createImage({
-          ...image,
-          product_id: productId,
-        })
-      }
-    })
-
-    onClose()
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{type === "create-product" ? "➕ محصول جدید" : "✏️ ویرایش محصول"}</h2>
-          <button className="close-btn" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-sections">
-            {/* Basic Info Section */}
-            <div className="form-section">
-              <h3>📝 اطلاعات پایه</h3>
-              <div className="form-group">
-                <label>عنوان محصول:</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
+        {activeTab === "services" && (
+          <div className="services-section">
+            <h2>مدیریت خدمات</h2>
+            <button className="add-button" onClick={handleAddService}>
+              افزودن خدمت جدید
+            </button>
+            <ul className="item-list">
+              {services.length === 0 ? (
+                <p>هیچ خدمتی یافت نشد. می‌توانید یک خدمت جدید اضافه کنید.</p>
+              ) : (
+                services.map((service) => (
+                  <li key={service.id}>
+                    <span>{service.title}</span>
+                    <div className="item-actions">
+                      <button onClick={() => handleEditService(service)}>ویرایش</button>
+                      <button onClick={() => handleDeleteService(service.id)}>حذف</button>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
+        )}
+        {selectedProduct !== null && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>{selectedProduct && selectedProduct.id ? "ویرایش محصول" : "افزودن محصول جدید"}</h3>
+                <button className="close-modal-btn" onClick={handleCancelProductEdit}>
+                  &times;
+                </button>
               </div>
-              <div className="form-group">
-                <label>توضیحات:</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  required
-                />
-              </div>
-              <div className="form-group checkbox-group">
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={formData.is_featured}
-                    onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
-                  />
-                  محصول ویژه
-                </label>
-              </div>
-            </div>
-
-            {/* Media Section */}
-            <div className="form-section">
-              <h3>🎬 رسانه</h3>
-              <div className="form-group">
-                <label>URL ویدیو پس‌زمینه:</label>
-                <input
-                  type="url"
-                  value={formData.background_video}
-                  onChange={(e) => setFormData({ ...formData, background_video: e.target.value })}
-                  placeholder="https://example.com/video.mp4"
-                />
-                <small>لینک مستقیم ویدیو را وارد کنید</small>
-              </div>
-            </div>
-
-            {/* Features Section */}
-            <div className="form-section">
-              <h3>⭐ ویژگی‌ها</h3>
-              {formData.features.map((feature, index) => (
-                <div key={index} className="feature-form-row">
+              <form onSubmit={handleSubmitProduct} className="modal-form">
+                <div className="form-group">
+                  <label>عنوان:</label>
                   <input
                     type="text"
-                    placeholder="ویژگی محصول"
-                    value={feature.value}
-                    onChange={(e) => {
-                      const newFeatures = [...formData.features]
-                      newFeatures[index].value = e.target.value
-                      setFormData({ ...formData, features: newFeatures })
-                    }}
+                    name="title"
+                    value={productFormData.title}
+                    onChange={handleProductInputChange}
+                    required
                   />
-                  <button type="button" className="remove-btn" onClick={() => removeFeature(index)}>
-                    🗑️
-                  </button>
                 </div>
-              ))}
-              <button type="button" className="add-btn" onClick={addFeature}>
-                ➕ افزودن ویژگی
-              </button>
-            </div>
-
-            {/* Specifications Section */}
-            <div className="form-section">
-              <h3>📋 مشخصات فنی</h3>
-              {formData.specifications.map((spec, index) => (
-                <div key={index} className="dynamic-form-row">
-                  <input
-                    type="text"
-                    placeholder="نام مشخصه"
-                    value={spec.name}
-                    onChange={(e) => {
-                      const newSpecs = [...formData.specifications]
-                      newSpecs[index].name = e.target.value
-                      setFormData({ ...formData, specifications: newSpecs })
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="مقدار مشخصه"
-                    value={spec.value}
-                    onChange={(e) => {
-                      const newSpecs = [...formData.specifications]
-                      newSpecs[index].value = e.target.value
-                      setFormData({ ...formData, specifications: newSpecs })
-                    }}
-                  />
-                  <input
-                    type="number"
-                    placeholder="ترتیب"
-                    value={spec.order}
-                    onChange={(e) => {
-                      const newSpecs = [...formData.specifications]
-                      newSpecs[index].order = Number.parseInt(e.target.value)
-                      setFormData({ ...formData, specifications: newSpecs })
-                    }}
-                  />
-                  <button type="button" className="remove-btn" onClick={() => removeSpecification(index)}>
-                    🗑️
-                  </button>
+                <div className="form-group">
+                  <label>توضیحات:</label>
+                  <textarea
+                    name="description"
+                    value={productFormData.description}
+                    onChange={handleProductInputChange}
+                    required
+                  ></textarea>
                 </div>
-              ))}
-              <button type="button" className="add-btn" onClick={addSpecification}>
-                ➕ افزودن مشخصه
-              </button>
-            </div>
-
-            {/* Images Section */}
-            <div className="form-section">
-              <h3>🖼️ تصاویر</h3>
-              {formData.images.map((image, index) => (
-                <div key={index} className="image-form-row">
-                  <input
-                    type="url"
-                    placeholder="URL تصویر"
-                    value={image.image}
-                    onChange={(e) => {
-                      const newImages = [...formData.images]
-                      newImages[index].image = e.target.value
-                      setFormData({ ...formData, images: newImages })
-                    }}
-                  />
-                  <input
-                    type="text"
-                    placeholder="متن جایگزین"
-                    value={image.alt_text}
-                    onChange={(e) => {
-                      const newImages = [...formData.images]
-                      newImages[index].alt_text = e.target.value
-                      setFormData({ ...formData, images: newImages })
-                    }}
-                  />
-                  <input
-                    type="number"
-                    placeholder="ترتیب"
-                    value={image.order}
-                    onChange={(e) => {
-                      const newImages = [...formData.images]
-                      newImages[index].order = Number.parseInt(e.target.value)
-                      setFormData({ ...formData, images: newImages })
-                    }}
-                  />
+                <div className="form-group checkbox-group">
                   <label>
                     <input
                       type="checkbox"
-                      checked={image.is_main}
-                      onChange={(e) => {
-                        const newImages = [...formData.images]
-                        // If setting as main, unset others
-                        if (e.target.checked) {
-                          newImages.forEach((img, i) => {
-                            img.is_main = i === index
-                          })
-                        } else {
-                          newImages[index].is_main = false
-                        }
-                        setFormData({ ...formData, images: newImages })
-                      }}
+                      name="is_featured"
+                      checked={productFormData.is_featured}
+                      onChange={handleProductInputChange}
                     />
-                    اصلی
+                    محصول ویژه
                   </label>
-                  <button type="button" className="remove-btn" onClick={() => removeImage(index)}>
-                    🗑️
+                </div>
+                <div className="form-group">
+                  <label>ویدئو پس زمینه (URL یا آپلود):</label>
+                  <input
+                    type="text"
+                    name="background_video"
+                    value={productFormData.background_video}
+                    onChange={handleProductInputChange}
+                    placeholder="http://example.com/video.mp4"
+                  />
+                  <div className="file-input-group">
+                    <input
+                      type="file"
+                      id="productVideoUpload"
+                      accept="video/mp4,video/webm"
+                      onChange={(e) => handleProductFileChange(e, "video_file")}
+                    />
+                    <label htmlFor="productVideoUpload">یا آپلود ویدئو</label>
+                    {productFormData.background_video && (
+                      <span className="file-name">{productFormData.background_video.split("/").pop()}</span>
+                    )}
+                  </div>
+                  {productFormData.background_video && (
+                    <video src={productFormData.background_video} controls className="file-preview" />
+                  )}
+                </div>
+                <DynamicInputList
+                  label="تصاویر محصول"
+                  items={productFormData.images}
+                  handlers={productImagesHandlers}
+                  placeholder="URL تصویر"
+                />
+                <div className="file-input-group">
+                  <input
+                    type="file"
+                    id="productImageUpload"
+                    accept="image/png,image/jpeg,image/jpg"
+                    multiple
+                    onChange={(e) => handleProductFileChange(e, "image_file")}
+                  />
+                  <label htmlFor="productImageUpload">یا آپلود تصاویر</label>
+                </div>
+                <DynamicInputList
+                  label="ویژگی‌ها"
+                  items={productFormData.features}
+                  handlers={productFeaturesHandlers}
+                  placeholder="ویژگی جدید"
+                />
+                <DynamicInputList
+                  label="مشخصات"
+                  items={productFormData.specifications}
+                  handlers={productSpecificationsHandlers}
+                  placeholder="مشخصات محصول"
+                />
+                <DynamicInputList
+                  label="نظرات"
+                  items={productFormData.reviews}
+                  handlers={productReviewsHandlers}
+                  placeholder="نظر مشتری"
+                />
+                <div className="form-actions">
+                  <button type="button" className="cancel" onClick={handleCancelProductEdit}>
+                    لغو
+                  </button>
+                  <button type="submit" className="save">
+                    ذخیره محصول
                   </button>
                 </div>
-              ))}
-              <button type="button" className="add-btn" onClick={addImage}>
-                ➕ افزودن تصویر
-              </button>
+              </form>
             </div>
           </div>
-
-          <div className="modal-actions">
-            <button type="button" className="cancel-btn" onClick={onClose}>
-              لغو
-            </button>
-            <button type="submit" className="save-btn">
-              💾 ذخیره
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-// News Modal Component
-const NewsModal = ({ type, news, onClose }) => {
-  const [formData, setFormData] = useState({
-    title: "",
-    excerpt: "",
-    content: "",
-    author: "",
-    category: "",
-    image: "",
-    is_featured: false,
-  })
-
-  useEffect(() => {
-    if (news && type === "edit-news") {
-      setFormData({
-        title: news.title || "",
-        excerpt: news.excerpt || "",
-        content: news.content || "",
-        author: news.author || "",
-        category: news.category || "",
-        image: news.image || "",
-        is_featured: news.is_featured || false,
-      })
-    }
-  }, [news, type])
-
-  const handleSubmit = (e) => {
-    e.preventDefault()
-
-    if (type === "create-news") {
-      // If setting as featured, remove featured from others
-      if (formData.is_featured) {
-        const allNews = db.getNews()
-        allNews.forEach(n => {
-          if (n.is_featured) {
-            db.updateNews(n.id, { is_featured: false })
-          }
-        })
-      }
-      
-      db.createNews(formData)
-    } else if (type === "edit-news") {
-      // If setting as featured, remove featured from others
-      if (formData.is_featured && !news.is_featured) {
-        const allNews = db.getNews()
-        allNews.forEach(n => {
-          if (n.is_featured && n.id !== news.id) {
-            db.updateNews(n.id, { is_featured: false })
-          }
-        })
-      }
-      
-      db.updateNews(news.id, formData)
-    }
-
-    onClose()
-  }
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content large-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{type === "create-news" ? "➕ خبر جدید" : "✏️ ویرایش خبر"}</h2>
-          <button className="close-btn" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-sections">
-            <div className="form-section">
-              <h3>📝 اطلاعات خبر</h3>
-              <div className="form-group">
-                <label>عنوان خبر:</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
+        )}
+        {selectedNews !== null && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>{selectedNews && selectedNews.id ? "ویرایش خبر" : "افزودن خبر جدید"}</h3>
+                <button className="close-modal-btn" onClick={handleCancelNewsEdit}>
+                  &times;
+                </button>
               </div>
-              <div className="form-group">
-                <label>خلاصه خبر:</label>
-                <textarea
-                  value={formData.excerpt}
-                  onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
-                  rows={3}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>متن کامل خبر:</label>
-                <textarea
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  rows={8}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="form-section">
-              <h3>📋 اطلاعات تکمیلی</h3>
-              <div className="form-group">
-                <label>نویسنده:</label>
-                <input
-                  type="text"
-                  value={formData.author}
-                  onChange={(e) => setFormData({ ...formData, author: e.target.value })}
-                  placeholder="نام نویسنده (اختیاری)"
-                />
-              </div>
-              <div className="form-group">
-                <label>دسته‌بندی:</label>
-                <input
-                  type="text"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="دسته‌بندی خبر"
-                />
-              </div>
-              <div className="form-group">
-                <label>تصویر خبر:</label>
-                <input
-                  type="url"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-              <div className="form-group checkbox-group">
-                <label>
+              <form onSubmit={handleSubmitNews} className="modal-form">
+                <div className="form-group">
+                  <label>عنوان:</label>
                   <input
-                    type="checkbox"
-                    checked={formData.is_featured}
-                    onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                    type="text"
+                    name="title"
+                    value={newsFormData.title}
+                    onChange={handleNewsInputChange}
+                    required
                   />
-                  خبر ویژه (فقط یک خبر می‌تواند ویژه باشد)
-                </label>
-              </div>
+                </div>
+                <div className="form-group">
+                  <label>خلاصه (Excerpt):</label>
+                  <textarea name="excerpt" value={newsFormData.excerpt} onChange={handleNewsInputChange}></textarea>
+                </div>
+                <div className="form-group">
+                  <label>محتوا:</label>
+                  <textarea
+                    name="content"
+                    value={newsFormData.content}
+                    onChange={handleNewsInputChange}
+                    required
+                  ></textarea>
+                </div>
+                <div className="form-group">
+                  <label>توضیحات (Description):</label>
+                  <textarea
+                    name="description"
+                    value={newsFormData.description}
+                    onChange={handleNewsInputChange}
+                  ></textarea>
+                </div>
+                <div className="form-group">
+                  <label>نویسنده:</label>
+                  <input type="text" name="author" value={newsFormData.author} onChange={handleNewsInputChange} />
+                </div>
+                <div className="form-group">
+                  <label>دسته‌بندی:</label>
+                  <input type="text" name="category" value={newsFormData.category} onChange={handleNewsInputChange} />
+                </div>
+                <div className="form-group">
+                  <label>تصویر خبر (URL یا آپلود):</label>
+                  <input
+                    type="url"
+                    name="image"
+                    value={newsFormData.image}
+                    onChange={handleNewsInputChange}
+                    placeholder="http://example.com/news_image.jpg"
+                  />
+                  <div className="file-input-group">
+                    <input
+                      type="file"
+                      id="newsImageUpload"
+                      accept="image/png,image/jpeg,image/jpg"
+                      onChange={handleNewsFileChange}
+                    />
+                    <label htmlFor="newsImageUpload">یا آپلود عکس</label>
+                    {newsFormData.image && <span className="file-name">{newsFormData.image.split("/").pop()}</span>}
+                  </div>
+                  {newsFormData.image && (
+                    <img src={newsFormData.image || "/placeholder.svg"} alt="News Preview" className="file-preview" />
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>بازدیدها:</label>
+                  <input
+                    type="number"
+                    name="views"
+                    value={newsFormData.views}
+                    onChange={handleNewsInputChange}
+                    min="0"
+                  />
+                </div>
+                <div className="form-group checkbox-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      name="is_featured"
+                      checked={Boolean(newsFormData.is_featured)}
+                      onChange={handleNewsInputChange}
+                    />
+                    خبر ویژه
+                  </label>
+                </div>
+                <div className="form-actions">
+                  <button type="button" className="cancel" onClick={handleCancelNewsEdit}>
+                    لغو
+                  </button>
+                  <button type="submit" className="save">
+                    ذخیره خبر
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-
-          <div className="modal-actions">
-            <button type="button" className="cancel-btn" onClick={onClose}>
-              لغو
-            </button>
-            <button type="submit" className="save-btn">
-              💾 ذخیره
-            </button>
+        )}
+        {selectedService !== null && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h3>{selectedService && selectedService.id ? "ویرایش خدمت" : "افزودن خدمت جدید"}</h3>
+                <button className="close-modal-btn" onClick={handleCancelServiceEdit}>
+                  &times;
+                </button>
+              </div>
+              <form onSubmit={handleSubmitService} className="modal-form">
+                <div className="form-group">
+                  <label>عنوان:</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={serviceFormData.title}
+                    onChange={handleServiceInputChange}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>توضیحات:</label>
+                  <textarea
+                    name="description"
+                    value={serviceFormData.description}
+                    onChange={handleServiceInputChange}
+                    required
+                  ></textarea>
+                </div>
+                <div className="form-group">
+                  <label>تصویر اصلی (URL یا آپلود):</label>
+                  <input
+                    type="text"
+                    name="mainImage"
+                    value={serviceFormData.mainImage}
+                    onChange={handleServiceInputChange}
+                    placeholder="http://example.com/main_service_image.jpg"
+                  />
+                  <div className="file-input-group">
+                    <input
+                      type="file"
+                      id="serviceMainImageUpload"
+                      accept="image/png,image/jpeg,image/jpg"
+                      onChange={(e) => handleServiceFileChange(e, "mainImage_file")}
+                    />
+                    <label htmlFor="serviceMainImageUpload">یا آپلود تصویر اصلی</label>
+                    {serviceFormData.mainImage && (
+                      <span className="file-name">{serviceFormData.mainImage.split("/").pop()}</span>
+                    )}
+                  </div>
+                  {serviceFormData.mainImage && (
+                    <img
+                      src={serviceFormData.mainImage || "/placeholder.svg"}
+                      alt="Main Service Preview"
+                      className="file-preview"
+                    />
+                  )}
+                </div>
+                <div className="form-actions">
+                  <button type="button" className="cancel" onClick={handleCancelServiceEdit}>
+                    لغو
+                  </button>
+                  <button type="submit" className="save">
+                    ذخیره خدمت
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
-        </form>
-      </div>
+        )}
+      </main>
     </div>
   )
 }

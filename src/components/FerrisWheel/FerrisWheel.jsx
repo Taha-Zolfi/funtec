@@ -3,6 +3,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
+const CABIN_COUNT = 10;
+
 function FerrisWheel() {
   const groupRef = useRef();
   const cylinderRef = useRef();
@@ -16,7 +18,7 @@ function FerrisWheel() {
 
   const inverseQuat = useMemo(() => new THREE.Quaternion(), []);
   const textureLoader = useMemo(() => new THREE.TextureLoader(), []);
-  const links = useMemo(() => Array(10).fill('/products/'), []);
+  const links = useMemo(() => Array(CABIN_COUNT).fill('/products/'), []);
   const textureCache = useMemo(() => new Map(), []);
 
   const materialConfig = useMemo(() => ({
@@ -31,21 +33,18 @@ function FerrisWheel() {
     if (textureCache.has(path)) {
       return textureCache.get(path);
     }
-
     const texture = textureLoader.load(
       path,
       undefined,
       undefined,
       (error) => console.warn(`Failed to load texture ${path}:`, error)
     );
-
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.repeat.x = -1;
     texture.offset.x = 1;
     texture.minFilter = THREE.LinearFilter;
     texture.magFilter = THREE.LinearFilter;
     texture.generateMipmaps = false;
-
     textureCache.set(path, texture);
     return texture;
   }, [textureLoader, textureCache]);
@@ -60,7 +59,6 @@ function FerrisWheel() {
 
   const handleClick = useCallback((event) => {
     if (!updateMouseCoords(event) || planeMeshes.current.length === 0) return;
-
     raycaster.current.setFromCamera(mouse.current, camera);
     const intersects = raycaster.current.intersectObjects(planeMeshes.current, false);
     if (intersects.length > 0) {
@@ -71,7 +69,6 @@ function FerrisWheel() {
 
   const handlePointerMove = useCallback((event) => {
     if (!updateMouseCoords(event) || planeMeshes.current.length === 0) return;
-
     raycaster.current.setFromCamera(mouse.current, camera);
     const intersects = raycaster.current.intersectObjects(planeMeshes.current, false);
     if (gl.domElement) {
@@ -89,61 +86,39 @@ function FerrisWheel() {
 
   useEffect(() => {
     if (!scene) return;
-
-    cabins.current = [];
-    planeMeshes.current = [];
-
-    const clonedScene = scene.clone(true);
-
+    
     if (groupRef.current) {
-      groupRef.current.clear();
-    }
+        cylinderRef.current = groupRef.current.getObjectByName('Cylinder');
+        cabins.current = [];
+        planeMeshes.current = [];
 
-    cylinderRef.current = clonedScene.getObjectByName('Cylinder');
-
-    for (let i = 1; i <= 10; i++) {
-      const index = i.toString().padStart(3, '0');
-
-      const cabin = clonedScene.getObjectByName(`v${index}`);
-      if (cabin) {
-        cabin.frustumCulled = true;
-        cabins.current.push(cabin);
-      }
-
-      const plane = clonedScene.getObjectByName(`Plane${index}`);
-      if (plane) {
-        const texture = loadTexture(`/p${i}.jpg`);
-        plane.material = new THREE.MeshBasicMaterial({
-          ...materialConfig,
-          map: texture,
-        });
-        plane.rotation.y = Math.PI;
-        plane.userData.link = links[i - 1];
-        plane.frustumCulled = true;
-        planeMeshes.current.push(plane);
-      }
-    }
-
-    if (groupRef.current) {
-      groupRef.current.add(clonedScene);
-    }
-
-    return () => {
-      if (groupRef.current && clonedScene) {
-        groupRef.current.remove(clonedScene);
-        clonedScene.traverse((child) => {
-          if (child.isMesh) {
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) {
-              if (Array.isArray(child.material)) {
-                child.material.forEach((mat) => mat.dispose());
-              } else {
-                child.material.dispose();
-              }
+        for (let i = 1; i <= CABIN_COUNT; i++) {
+            const index = i.toString().padStart(3, '0');
+            
+            const cabin = groupRef.current.getObjectByName(`v${index}`);
+            if (cabin) {
+                cabin.frustumCulled = true;
+                cabins.current.push(cabin);
             }
-          }
-        });
-      }
+
+            const plane = groupRef.current.getObjectByName(`Plane${index}`);
+            if (plane) {
+                const texture = loadTexture(`/p${i}-min.webp`);
+                plane.material = new THREE.MeshBasicMaterial({
+                    ...materialConfig,
+                    map: texture,
+                });
+                plane.rotation.y = Math.PI;
+                plane.userData.link = links[i - 1];
+                plane.frustumCulled = true;
+                planeMeshes.current.push(plane);
+            }
+        }
+    }
+    
+    return () => {
+        textureCache.forEach(texture => texture.dispose());
+        textureCache.clear();
     };
   }, [scene, loadTexture, links, materialConfig]);
 
@@ -167,6 +142,7 @@ function FerrisWheel() {
     cylinder.rotation.y -= 0.003;
 
     if (cabins.current.length > 0) {
+      // این منطق باعث می‌شود کابین‌ها نسبت به چرخش چرخ و فلک ثابت بمانند
       cylinder.getWorldQuaternion(inverseQuat);
       inverseQuat.invert();
 
@@ -179,14 +155,7 @@ function FerrisWheel() {
     }
   });
 
-  useEffect(() => {
-    return () => {
-      textureCache.forEach(texture => texture.dispose());
-      textureCache.clear();
-    };
-  }, [textureCache]);
-
-  return <group ref={groupRef} position={[-1.2, 0.1, 0]} />;
+  return <primitive object={scene} ref={groupRef} position={[-1.2, 0.1, 0]} />;
 }
 
 useGLTF.preload('/ferris_final.glb');

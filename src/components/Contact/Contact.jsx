@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial, Box, Torus } from '@react-three/drei';
 import { motion } from 'framer-motion';
-import { FaMapMarkerAlt, FaTelegram, FaInstagram, FaPhone } from 'react-icons/fa';
+import { FaMapMarkerAlt, FaTelegram, FaInstagram, FaPhone, FaHeadset, FaUsers, FaBuilding } from 'react-icons/fa';
 import * as random from 'maath/random/dist/maath-random.esm';
 import './Contact.css';
 import logo from './logo.png'
@@ -92,13 +92,56 @@ function CreativeScene3D() {
   );
 }
 
+// Department Contact Component
+const DepartmentContact = ({ title, phones, icon: Icon, delay = 0 }) => {
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30, scale: 0.9 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      transition: {
+        duration: 0.6,
+        ease: [0.25, 0.46, 0.45, 0.94],
+        delay
+      }
+    }
+  };
+
+  return (
+    <motion.div className="department-section" variants={itemVariants}>
+      <div className="department-header">
+        <div className="department-icon-wrapper">
+          <Icon className="department-icon" />
+        </div>
+        <h3 className="department-title">{title}</h3>
+      </div>
+      <div className="department-phones">
+        {phones.map((phone, index) => (
+          <motion.a
+            key={index}
+            href={`tel:${phone.replace(/\s/g, '')}`}
+            className="phone-link"
+            whileHover={{ scale: 1.02, x: -5 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.2 }}
+          >
+            <FaPhone className="phone-icon-small" />
+            <span>{phone}</span>
+          </motion.a>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
 const Contact = () => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.12,
+        staggerChildren: 0.15,
         delayChildren: 0.2
       }
     }
@@ -173,37 +216,32 @@ const Contact = () => {
         </motion.h1>
 
         <motion.div className="contact-content" variants={itemVariants}>
-          <div className="contact-grid">
-            <motion.a 
-              href="tel:09191771727"
-              className="contact-item phone-item"
-              whileHover={{ scale: 1.03, y: -3 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              style={{ color: 'inherit', textDecoration: 'none' }}
-            >
-              <div className="icon-wrapper phone-wrapper">
-                <FaPhone className="icon phone-icon" />
-              </div>
-              <span style={{ flex: 1, textAlign: 'right' }}>0919-177-17-27</span>
-              <div className="item-glow phone-glow"></div>
-            </motion.a>
+          {/* Department Contacts */}
+          <div className="departments-grid">
+            <DepartmentContact
+              title="واحد بازاریابی و فروش"
+              phones={["021 33 49 99 01", "021 33 49 99 02"]}
+              icon={FaBuilding}
+              delay={0.1}
+            />
+            
+            <DepartmentContact
+              title="تیم فروش"
+              phones={["0919 177 17 27", "0910 910 13 80"]}
+              icon={FaUsers}
+              delay={0.2}
+            />
+            
+            <DepartmentContact
+              title="خدمات پس از فروش"
+              phones={["021 33 47 73 55", "0990 477 277 1"]}
+              icon={FaHeadset}
+              delay={0.3}
+            />
+          </div>
 
-            <motion.a 
-              href="tel:02177230537"
-              className="contact-item phone-item"
-              whileHover={{ scale: 1.03, y: -3 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ duration: 0.2 }}
-              style={{ color: 'inherit', textDecoration: 'none' }}
-            >
-              <div className="icon-wrapper phone-wrapper">
-                <FaPhone className="icon phone-icon" />
-              </div>
-              <span style={{ flex: 1, textAlign: 'right' }}>021-7723-0537</span>
-              <div className="item-glow phone-glow"></div>
-            </motion.a>
-
+          {/* Social Media */}
+          <motion.div className="social-grid" variants={itemVariants}>
             <motion.a 
               href="https://instagram.com/Funtec.co"
               target="_blank"
@@ -237,9 +275,9 @@ const Contact = () => {
               <span style={{ flex: 1, textAlign: 'right' }}>@funtec_co</span>
               <div className="item-glow telegram-glow"></div>
             </motion.a>
-          </div>
+          </motion.div>
 
-          {/* Address section */}
+          {/* Address sections */}
           <motion.div 
             className="address-section"
             variants={itemVariants}
@@ -250,7 +288,23 @@ const Contact = () => {
               </div>
               <div className="address-content">
                 <h3 className="address-title">آدرس دفتر مرکزی</h3>
-                <span className="address-text">تهران، خیابان آزادی، پلاک ۱۲۳</span>
+                <span className="address-text">تهران میدان ولی عصر نبش خیابان فتحی شقاقی برج بلورین</span>
+              </div>
+              <div className="item-glow location-glow"></div>
+            </div>
+          </motion.div>
+
+          <motion.div 
+            className="address-section"
+            variants={itemVariants}
+          >
+            <div className="address-card">
+              <div className="icon-wrapper location-wrapper">
+                <FaMapMarkerAlt className="icon location-icon" />
+              </div>
+              <div className="address-content">
+                <h3 className="address-title">آدرس دفتر خدمات</h3>
+                <span className="address-text">تهران میدان آقا نور مجتمع تجاری پاساژ اطمینان ایرانیان</span>
               </div>
               <div className="item-glow location-glow"></div>
             </div>
@@ -269,7 +323,7 @@ const Contact = () => {
         </motion.div>
 
         <motion.p className="copyright desktop-only" variants={itemVariants}>
-          © ۱۴۰۳ فان تک. تمامی حقوق محفوظ است.
+          © 1404 فان تک. تمامی حقوق محفوظ است.
         </motion.p>
       </motion.div>
     </div>

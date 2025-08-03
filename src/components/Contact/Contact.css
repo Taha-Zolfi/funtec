@@ -69,7 +69,6 @@
   animation: backgroundMove 25s ease infinite;
   color: #fff;
   min-height: 100vh;
-  /* height: 100vh; */
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -138,11 +137,149 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2rem;
+  gap: 2.5rem;
 }
 
-/* Contact grid with better responsiveness */
-.contact-grid {
+/* Departments Grid */
+.departments-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+}
+
+.department-section {
+  position: relative;
+  padding: 1.8rem;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(255, 181, 39, 0.15), rgba(19, 200, 255, 0.15));
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  transition: all 0.4s ease;
+  overflow: hidden;
+}
+
+.department-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  transition: left 0.5s ease;
+}
+
+.department-section:hover::before {
+  left: 100%;
+}
+
+.department-section:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, rgba(255, 181, 39, 0.2), rgba(19, 200, 255, 0.2));
+}
+
+.department-header {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.department-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 55px;
+  height: 55px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(255, 181, 39, 0.4), rgba(255, 181, 39, 0.2));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.department-icon {
+  font-size: 1.6rem;
+  color: #ffb527;
+  filter: drop-shadow(0 0 15px rgba(255, 181, 39, 0.6));
+}
+
+.department-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  text-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+  flex: 1;
+  text-align: right;
+}
+
+.department-phones {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.phone-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1.2rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  text-decoration: none;
+  color: #fff;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.phone-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(19, 200, 255, 0.15), transparent);
+  transition: left 0.4s ease;
+}
+
+.phone-link:hover::before {
+  left: 100%;
+}
+
+.phone-link:hover {
+  background: rgba(19, 200, 255, 0.15);
+  border-color: rgba(19, 200, 255, 0.3);
+  box-shadow: 0 8px 25px rgba(19, 200, 255, 0.2);
+  transform: translateX(-5px);
+}
+
+.phone-icon-small {
+  font-size: 1.1rem;
+  color: #13c8ff;
+  filter: drop-shadow(0 0 10px rgba(19, 200, 255, 0.6));
+  flex-shrink: 0;
+}
+
+.phone-link span {
+  font-size: 1.1rem;
+  font-weight: 600;
+  flex: 1;
+  text-align: right;
+  direction: ltr;
+  letter-spacing: 0.5px;
+}
+
+/* Social Media Grid */
+.social-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
@@ -171,7 +308,6 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  /* background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent); */
   transition: left 0.5s ease;
 }
 
@@ -201,10 +337,6 @@
   transition: all 0.3s ease;
 }
 
-.phone-wrapper {
-  background: linear-gradient(135deg, rgba(19, 200, 255, 0.35), rgba(19, 200, 255, 0.15));
-}
-
 .instagram-wrapper {
   background: linear-gradient(135deg, rgba(19, 200, 255, 0.35), rgba(19, 200, 255, 0.15));
 }
@@ -226,10 +358,6 @@
 .contact-item:hover .icon {
   transform: scale(1.1);
   filter: drop-shadow(0 0 15px currentColor);
-}
-
-.phone-icon {
-  color: #13c8ff;
 }
 
 .instagram-icon {
@@ -273,10 +401,6 @@
 
 .contact-item:hover .item-glow {
   opacity: 1;
-}
-
-.phone-glow {
-  background: linear-gradient(135deg, rgba(19, 200, 255, 0.15), rgba(19, 200, 255, 0.08));
 }
 
 .instagram-glow {
@@ -433,7 +557,7 @@
 
   .contact-wrapper {
     margin-top: 6vh;
-    gap: 1.8rem;
+    gap: 2rem;
     padding-bottom: 1.5rem;
   }
 
@@ -444,10 +568,44 @@
   }
 
   .contact-content {
-    gap: 1.8rem;
+    gap: 2rem;
   }
 
-  .contact-grid {
+  .departments-grid {
+    gap: 1.5rem;
+  }
+
+  .department-section {
+    padding: 1.5rem;
+  }
+
+  .department-header {
+    margin-bottom: 1.2rem;
+    gap: 1rem;
+  }
+
+  .department-icon-wrapper {
+    width: 50px;
+    height: 50px;
+  }
+
+  .department-icon {
+    font-size: 1.4rem;
+  }
+
+  .department-title {
+    font-size: 1.2rem;
+  }
+
+  .phone-link {
+    padding: 0.7rem 1rem;
+  }
+
+  .phone-link span {
+    font-size: 1rem;
+  }
+
+  .social-grid {
     grid-template-columns: 1fr;
     gap: 1.2rem;
   }
@@ -531,6 +689,36 @@
     padding: 0 0.2rem;
   }
 
+  .departments-grid {
+    gap: 1.2rem;
+  }
+
+  .department-section {
+    padding: 1.2rem;
+  }
+
+  .department-header {
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .department-icon-wrapper {
+    width: 45px;
+    height: 45px;
+  }
+
+  .department-title {
+    font-size: 1.1rem;
+  }
+
+  .phone-link {
+    padding: 0.6rem 0.8rem;
+  }
+
+  .phone-link span {
+    font-size: 0.95rem;
+  }
+
   .contact-item {
     padding: 1rem;
     gap: 0.8rem;
@@ -597,6 +785,14 @@
     padding: 0 0.3rem;
   }
 
+  .department-title {
+    font-size: 1rem;
+  }
+
+  .phone-link span {
+    font-size: 0.9rem;
+  }
+
   .contact-item span {
     font-size: 0.9rem;
   }
@@ -619,6 +815,22 @@
   .contact-item:active {
     transform: scale(0.97);
     background: rgba(255, 255, 255, 0.18);
+  }
+  
+  .department-section:hover {
+    transform: none;
+  }
+  
+  .department-section:active {
+    transform: scale(0.97);
+  }
+  
+  .phone-link:hover {
+    transform: none;
+  }
+  
+  .phone-link:active {
+    transform: scale(0.97);
   }
   
   .contact-footer:hover {
@@ -658,7 +870,15 @@
     gap: 1.2rem;
   }
 
-  .contact-grid {
+  .departments-grid {
+    gap: 1rem;
+  }
+
+  .department-section {
+    padding: 1rem;
+  }
+
+  .social-grid {
     gap: 1rem;
   }
 

@@ -1,7 +1,151 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useNavigate } from "react-router-dom"
-import { db } from "../database/db.js"
+import { db } from "../../api"
 import "./Products.css"
+
+// Memoized Star Rating Component
+const StarRating = ({ rating, onRatingChange, readonly = false, size = "medium" }) => {
+  const [hoverRating, setHoverRating] = useState(0)
+  
+  const handleStarClick = useCallback((starValue) => {
+    if (!readonly && onRatingChange) {
+      onRatingChange(starValue)
+    }
+  }, [readonly, onRatingChange])
+  
+  const handleStarHover = useCallback((starValue) => {
+    if (!readonly) {
+      setHoverRating(starValue)
+    }
+  }, [readonly])
+  
+  const handleStarLeave = useCallback(() => {
+    if (!readonly) {
+      setHoverRating(0)
+    }
+  }, [readonly])
+  
+  const stars = useMemo(() => {
+    return [1, 2, 3, 4, 5].map((starValue) => (
+      <button
+        key={starValue}
+        type="button"
+        className={`star-button ${
+          starValue <= (hoverRating || rating) ? 'filled' : 'empty'
+        }`}
+        onClick={() => handleStarClick(starValue)}
+        onMouseEnter={() => handleStarHover(starValue)}
+        onMouseLeave={handleStarLeave}
+        disabled={readonly}
+        aria-label={`${starValue} ستاره`}
+      >
+        <svg viewBox="0 0 24 24" className="star-icon">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+        </svg>
+      </button>
+    ))
+  }, [hoverRating, rating, handleStarClick, handleStarHover, handleStarLeave, readonly])
+  
+  return (
+    <div className={`star-rating ${size} ${readonly ? 'readonly' : 'interactive'}`}>
+      {stars}
+    </div>
+  )
+}
+
+// Memoized Product Section Component
+const ProductSection = ({ product, index, onProductClick }) => {
+  const sectionRef = useRef(null)
+  
+  const calculateAverageRating = useCallback((reviews) => {
+    if (!reviews || reviews.length === 0) return 0
+    const sum = reviews.reduce((acc, review) => acc + (review.rating || 0), 0)
+    return (sum / reviews.length).toFixed(1)
+  }, [])
+
+  const averageRating = useMemo(() => 
+    calculateAverageRating(product.reviews), 
+    [product.reviews, calculateAverageRating]
+  )
+
+  const handleProductClick = useCallback(() => {
+    onProductClick(product)
+  }, [product, onProductClick])
+
+  return (
+    <section 
+      ref={sectionRef}
+      className="product-section scroll-animate snap-section"
+      data-section-index={index + 1}
+    >
+      <div className="section-background">
+        {product.background_video ? (
+          <video 
+            autoPlay 
+            muted 
+            loop 
+            playsInline 
+            className="bg-video"
+            preload="metadata"
+            poster={product.mainImage}
+          >
+            <source src={product.background_video} type="video/mp4" />
+          </video>
+        ) : (
+          <img 
+            src={product.mainImage}
+            alt={product.title || 'محصول'}
+            className="bg-image"
+            loading="lazy"
+            decoding="async"
+          />
+        )}
+        <div className="dark-overlay"></div>
+      </div>
+
+      <div className="section-content">
+        <div className="product-info">
+          {product.is_featured && (
+            <div className="featured-tag">
+              <span className="star-icon">⭐</span>
+              <span>محصول ویژه</span>
+            </div>
+          )}
+
+          <h2 className="product-title">{product.title || 'محصول بدون نام'}</h2>
+          
+          <div className="rating-section">
+            <StarRating 
+              rating={Math.floor(averageRating)} 
+              readonly={true}
+              size="small"
+            />
+            <span className="rating-info">
+              {averageRating} ({(product.reviews || []).length} نظر)
+            </span>
+          </div>
+
+          <p className="product-desc">{product.description || 'توضیحی برای این محصول موجود نیست.'}</p>
+
+          <button 
+            type="button"
+            className="btn details-btn"
+            onClick={handleProductClick}
+          >
+            <span className="details-btn-text">مشاهده جزئیات</span>
+            <div id="container-stars">
+              <div id="stars"></div>
+            </div>
+            <div id="glow">
+              <div className="circle"></div>
+              <div className="circle"></div>
+            </div>
+          </button>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 const Products = () => {
   const navigate = useNavigate()
@@ -11,18 +155,42 @@ const Products = () => {
   const [currentSection, setCurrentSection] = useState(0)
   const [scrollProgress, setScrollProgress] = useState(0)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  
+  const scrollTimeoutRef = useRef(null)
+  const observerRef = useRef(null)
+  const containerRef = useRef(null)
 
-  useEffect(() => {
-    loadProducts()
-  }, [])
+  // Memoized filtered products calculation
+  const memoizedFilteredProducts = useMemo(() => {
+    if (!searchTerm.trim()) return products
 
-  useEffect(() => {
-    filterProducts()
+    const searchLower = searchTerm.toLowerCase().trim()
+    return products.filter((product) => {
+      const titleMatch = product.title?.toLowerCase().includes(searchLower)
+      const descMatch = product.description?.toLowerCase().includes(searchLower)
+      const featureMatch = product.features?.some(f => 
+        f?.toLowerCase().includes(searchLower)
+      )
+      const specMatch = product.specifications?.some(s => 
+        s?.toLowerCase().includes(searchLower)
+      )
+      
+      return titleMatch || descMatch || featureMatch || specMatch
+    })
   }, [products, searchTerm])
 
+  // Update filtered products when memoized result changes
   useEffect(() => {
-    const handleScroll = () => {
-      const container = document.querySelector('.snap-container')
+    setFilteredProducts(memoizedFilteredProducts)
+  }, [memoizedFilteredProducts])
+
+  // Optimized scroll handler with throttling
+  const handleScroll = useCallback(() => {
+    if (scrollTimeoutRef.current) return
+    
+    scrollTimeoutRef.current = requestAnimationFrame(() => {
+      const container = containerRef.current
       if (container) {
         const scrollTop = container.scrollTop
         const scrollHeight = container.scrollHeight - container.clientHeight
@@ -33,87 +201,116 @@ const Products = () => {
         const currentSectionIndex = Math.round(scrollTop / sectionHeight)
         setCurrentSection(currentSectionIndex)
       }
-    }
-
-    const container = document.querySelector('.snap-container')
-    if (container) {
-      container.addEventListener('scroll', handleScroll)
-      return () => container.removeEventListener('scroll', handleScroll)
-    }
+      scrollTimeoutRef.current = null
+    })
   }, [])
 
+  // Optimized intersection observer
   useEffect(() => {
     const observerOptions = {
-      threshold: 0.3,
-      rootMargin: "0px 0px -100px 0px",
+      threshold: [0.1, 0.3, 0.5],
+      rootMargin: "0px 0px -50px 0px",
     }
 
-    const observer = new IntersectionObserver((entries) => {
+    observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.3) {
           entry.target.classList.add("visible")
         }
       })
     }, observerOptions)
 
-    const elements = document.querySelectorAll(".scroll-animate")
-    elements.forEach((el) => observer.observe(el))
+    // Observe elements after a short delay to improve initial load performance
+    const timeoutId = setTimeout(() => {
+      const elements = document.querySelectorAll(".scroll-animate")
+      elements.forEach((el) => observerRef.current?.observe(el))
+    }, 100)
 
-    return () => observer.disconnect()
+    return () => {
+      clearTimeout(timeoutId)
+      observerRef.current?.disconnect()
+    }
   }, [filteredProducts])
 
-  const loadProducts = () => {
+  // Scroll event listener setup
+  useEffect(() => {
+    const container = containerRef.current
+    if (container) {
+      container.addEventListener('scroll', handleScroll, { passive: true })
+      return () => container.removeEventListener('scroll', handleScroll)
+    }
+  }, [handleScroll])
+
+  // Load products with error handling and loading state
+  const loadProducts = useCallback(async () => {
+    const BASE_URL = "https://funtec.ir"
+    const PLACEHOLDER_IMAGE = "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg"
+
     try {
-      const allProducts = db.getProducts().map((product) => ({
-        ...product,
-        features: db.getFeaturesByProduct(product.id) || [],
-        specifications: db.getSpecificationsByProduct(product.id) || [],
-        images: db.getImagesByProduct(product.id) || [],
-        reviews: db.getReviewsByProduct(product.id) || [],
-        mainImage: db.getMainImage(product.id) || "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg",
-      }))
-      setProducts(allProducts)
+      setIsLoading(true)
+      const allProducts = await db.getProducts()
+      
+      const mappedProducts = allProducts.map((product) => {
+        // Image Processing
+        let processedImages = []
+        const rawImagesFromAPI = product.images
+        if (Array.isArray(rawImagesFromAPI)) {
+          processedImages = rawImagesFromAPI
+        } else if (typeof rawImagesFromAPI === 'string' && rawImagesFromAPI.trim() !== '') {
+          processedImages = rawImagesFromAPI.split(',').map(img => img.trim())
+        }
+
+        const finalImages = processedImages
+          .filter(img => img && typeof img === 'string' && img.trim() !== '')
+          .map(img => {
+            const path = img.trim().startsWith('/') ? img.trim() : `/${img.trim()}`
+            return `${BASE_URL}${path}`
+          })
+          
+        // Fallback Image
+        let mainImage = finalImages.length > 0 ? finalImages[0] : PLACEHOLDER_IMAGE
+        if (finalImages.length === 0 && product.image && typeof product.image === 'string') {
+          const path = product.image.trim().startsWith('/') ? product.image.trim() : `/${product.image.trim()}`
+          mainImage = `${BASE_URL}${path}`
+        }
+
+        // Video Processing
+        let finalVideoUrl = null
+        const rawVideoFromAPI = product.background_video
+        if (rawVideoFromAPI && typeof rawVideoFromAPI === 'string' && rawVideoFromAPI.trim() !== '') {
+          const videoPath = rawVideoFromAPI.startsWith('/') ? rawVideoFromAPI : `/${rawVideoFromAPI}`
+          finalVideoUrl = `${BASE_URL}${videoPath.trim()}`
+        }
+
+        return {
+          ...product,
+          specifications: (typeof product.specifications === 'string' && product.specifications) ? product.specifications.split(',') : [],
+          reviews: (typeof product.reviews === 'string' && product.reviews) ? product.reviews.split(',') : [],
+          images: finalImages,
+          mainImage: mainImage,
+          background_video: finalVideoUrl,
+        }
+      })
+      
+      setProducts(mappedProducts)
     } catch (error) {
       console.error("Error loading products:", error)
       setProducts([])
+    } finally {
+      setIsLoading(false)
     }
-  }
+  }, [])
 
-  const filterProducts = () => {
-    let filtered = products
+  useEffect(() => {
+    loadProducts()
+  }, [loadProducts])
 
-    if (searchTerm.trim()) {
-      const searchLower = searchTerm.toLowerCase().trim()
-      filtered = filtered.filter((product) => {
-        const titleMatch = product.title?.toLowerCase().includes(searchLower)
-        const descMatch = product.description?.toLowerCase().includes(searchLower)
-        const featureMatch = product.features?.some(f => 
-          f.value?.toLowerCase().includes(searchLower)
-        )
-        const specMatch = product.specifications?.some(s => 
-          s.name?.toLowerCase().includes(searchLower) || 
-          s.value?.toLowerCase().includes(searchLower)
-        )
-        
-        return titleMatch || descMatch || featureMatch || specMatch
-      })
-    }
-
-    setFilteredProducts(filtered)
-  }
-
-  const calculateAverageRating = (reviews) => {
-    if (!reviews || reviews.length === 0) return 0
-    const sum = reviews.reduce((acc, review) => acc + (review.rating || 0), 0)
-    return (sum / reviews.length).toFixed(1)
-  }
-
-  const openProductDetail = (product) => {
+  const openProductDetail = useCallback((product) => {
     navigate(`/product/${product.id}`)
-  }
+  }, [navigate])
 
-  const scrollToSection = (sectionIndex) => {
-    const container = document.querySelector('.snap-container')
+  const scrollToSection = useCallback((sectionIndex) => {
+    const container = containerRef.current
     if (container) {
       const sectionHeight = container.clientHeight
       container.scrollTo({
@@ -121,60 +318,71 @@ const Products = () => {
         behavior: 'smooth'
       })
     }
-  }
+  }, [])
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchTerm("")
-  }
+  }, [])
 
-  // Star Rating Component
-  const StarRating = ({ rating, onRatingChange, readonly = false, size = "medium" }) => {
-    const [hoverRating, setHoverRating] = useState(0)
-    
-    const handleStarClick = (starValue) => {
-      if (!readonly && onRatingChange) {
-        onRatingChange(starValue)
-      }
-    }
-    
-    const handleStarHover = (starValue) => {
-      if (!readonly) {
-        setHoverRating(starValue)
-      }
-    }
-    
-    const handleStarLeave = () => {
-      if (!readonly) {
-        setHoverRating(0)
-      }
-    }
-    
+  const handleSearchChange = useCallback((e) => {
+    setSearchTerm(e.target.value)
+  }, [])
+
+  const handleSearchFocus = useCallback(() => {
+    setSearchFocused(true)
+  }, [])
+
+  const handleSearchBlur = useCallback(() => {
+    setSearchFocused(false)
+  }, [])
+
+  // Memoized navigation dots
+  const navigationDots = useMemo(() => (
+    <div className="navigation-dots">
+      <button 
+        className={`nav-dot ${currentSection === 0 ? 'active' : ''}`}
+        onClick={() => scrollToSection(0)}
+        aria-label="برو به بالای صفحه"
+      >
+        <span className="dot-tooltip">صفحه اصلی</span>
+      </button>
+      
+      {filteredProducts.map((product, index) => (
+        <button 
+          key={product.id}
+          className={`nav-dot ${currentSection === index + 1 ? 'active' : ''}`}
+          onClick={() => scrollToSection(index + 1)}
+          aria-label={`برو به ${product.title}`}
+        >
+          <span className="dot-tooltip">{product.title}</span>
+        </button>
+      ))}
+      
+      {filteredProducts.length === 0 && searchTerm && (
+        <button 
+          className={`nav-dot ${currentSection === 1 ? 'active' : ''}`}
+          onClick={() => scrollToSection(1)}
+          aria-label="هیچ محصولی یافت نشد"
+        >
+          <span className="dot-tooltip">نتیجه‌ای یافت نشد</span>
+        </button>
+      )}
+    </div>
+  ), [currentSection, filteredProducts, searchTerm, scrollToSection])
+
+  if (isLoading) {
     return (
-      <div className={`star-rating ${size} ${readonly ? 'readonly' : 'interactive'}`}>
-        {[1, 2, 3, 4, 5].map((starValue) => (
-          <button
-            key={starValue}
-            type="button"
-            className={`star-button ${
-              starValue <= (hoverRating || rating) ? 'filled' : 'empty'
-            }`}
-            onClick={() => handleStarClick(starValue)}
-            onMouseEnter={() => handleStarHover(starValue)}
-            onMouseLeave={handleStarLeave}
-            disabled={readonly}
-            aria-label={`${starValue} ستاره`}
-          >
-            <svg viewBox="0 0 24 24" className="star-icon">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-            </svg>
-          </button>
-        ))}
+      <div className="persian-products loading-state">
+        <div className="loading-content">
+          <div className="loading-spinner"></div>
+          <p>در حال بارگذاری محصولات...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="persian-products snap-container">
+    <div className="persian-products snap-container" ref={containerRef}>
       {/* Scroll Progress Bar */}
       <div className="scroll-progress-container">
         <div 
@@ -184,36 +392,7 @@ const Products = () => {
       </div>
 
       {/* Navigation Dots */}
-      <div className="navigation-dots">
-        <button 
-          className={`nav-dot ${currentSection === 0 ? 'active' : ''}`}
-          onClick={() => scrollToSection(0)}
-          aria-label="برو به بالای صفحه"
-        >
-          <span className="dot-tooltip">صفحه اصلی</span>
-        </button>
-        
-        {filteredProducts.map((product, index) => (
-          <button 
-            key={product.id}
-            className={`nav-dot ${currentSection === index + 1 ? 'active' : ''}`}
-            onClick={() => scrollToSection(index + 1)}
-            aria-label={`برو به ${product.title}`}
-          >
-            <span className="dot-tooltip">{product.title}</span>
-          </button>
-        ))}
-        
-        {filteredProducts.length === 0 && searchTerm && (
-          <button 
-            className={`nav-dot ${currentSection === 1 ? 'active' : ''}`}
-            onClick={() => scrollToSection(1)}
-            aria-label="هیچ محصولی یافت نشد"
-          >
-            <span className="dot-tooltip">نتیجه‌ای یافت نشد</span>
-          </button>
-        )}
-      </div>
+      {navigationDots}
 
       {/* Header Section */}
       <header className="page-header snap-section">
@@ -257,9 +436,9 @@ const Products = () => {
                   type="text"
                   placeholder="جستجو در محصولات..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
+                  onChange={handleSearchChange}
+                  onFocus={handleSearchFocus}
+                  onBlur={handleSearchBlur}
                   className="modern-search-input"
                 />
                 {searchTerm && (
@@ -295,69 +474,12 @@ const Products = () => {
 
       {/* Product Sections */}
       {filteredProducts.map((product, index) => (
-        <section key={product.id} className="product-section scroll-animate snap-section">
-          <div className="section-background">
-            {product.background_video ? (
-              <video 
-                autoPlay 
-                muted 
-                loop 
-                playsInline 
-                className="bg-video"
-              >
-                <source src={product.background_video} type="video/mp4" />
-              </video>
-            ) : (
-              <img 
-                src={product.mainImage || "https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg"} 
-                alt={product.title || 'محصول'}
-                className="bg-image"
-              />
-            )}
-            <div className="dark-overlay"></div>
-          </div>
-
-          <div className="section-content">
-            <div className="product-info">
-              {product.is_featured && (
-                <div className="featured-tag">
-                  <span className="star-icon">⭐</span>
-                  <span>محصول ویژه</span>
-                </div>
-              )}
-
-              <h2 className="product-title">{product.title || 'محصول بدون نام'}</h2>
-              
-              <div className="rating-section">
-                <StarRating 
-                  rating={Math.floor(calculateAverageRating(product.reviews))} 
-                  readonly={true}
-                  size="small"
-                />
-                <span className="rating-info">
-                  {calculateAverageRating(product.reviews)} ({(product.reviews || []).length} نظر)
-                </span>
-              </div>
-
-              <p className="product-desc">{product.description || 'توضیحی برای این محصول موجود نیست.'}</p>
-
-              <button 
-                type="button"
-                className="btn details-btn"
-                onClick={() => openProductDetail(product)}
-              >
-                <span className="details-btn-text">مشاهده جزئیات</span>
-                <div id="container-stars">
-                  <div id="stars"></div>
-                </div>
-                <div id="glow">
-                  <div className="circle"></div>
-                  <div className="circle"></div>
-                </div>
-              </button>
-            </div>
-          </div>
-        </section>
+        <ProductSection
+          key={product.id}
+          product={product}
+          index={index}
+          onProductClick={openProductDetail}
+        />
       ))}
 
       {/* Empty State */}

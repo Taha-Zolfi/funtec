@@ -1,18 +1,17 @@
-"use client"
-
 import { useEffect, useState } from "react"
 import "./Nav.css"
-
-// لیست منو - حالا می‌تونه تا هر سطحی عمق داشته باشه
+import logo from "./logo.png"
+import { FaHome, FaBoxOpen, FaInfoCircle, FaNewspaper, FaPhone } from "react-icons/fa";
+// لیست منو با آیکون‌های زیبا از react-icons
 const menuItems = [
   {
     title: "خانه",
-    icon: "🏠",
+    icon: <FaHome />,
     href: "/",
   },
   {
     title: "محصولات",
-    icon: "📦",
+    icon: <FaBoxOpen />,
     children: [
       {
         title: "لیزرتگ",
@@ -34,12 +33,17 @@ const menuItems = [
   },
   {
     title: "درباره ما",
-    icon: "ℹ️",
+    icon: <FaInfoCircle />,
     href: "#about",
   },
   {
+    title: "اخبار",
+    icon: <FaNewspaper />,
+    href: "/news",
+  },
+  {
     title: "تماس با ما",
-    icon: "📞",
+    icon: <FaPhone />,
     href: "#contact",
   },
 ]
@@ -208,10 +212,14 @@ const Nav = () => {
           <a href="#about" onClick={() => setMenuOpen(false)}>
             درباره ما
           </a>
+          <a href="/news" onClick={() => setMenuOpen(false)}>
+           اخبار
+          </a>
           <a href="#contact" onClick={() => setMenuOpen(false)}>
             تماس با ما
           </a>
         </div>
+
 
         <div
           className={`menu-icon ${menuOpen ? "open" : ""}`}

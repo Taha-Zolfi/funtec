@@ -13,66 +13,32 @@
   width: 100%;
   position: relative;
   overflow: hidden;
-  font-family: "Kalameh", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   direction: rtl;
+  background: radial-gradient(ellipse at top, var(--deep-blue) 0%, #001122 50%, #000011 100%);
 }
 
-/* Background Pattern */
-.pattern {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at 25% 25%, rgba(255, 181, 39, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 75% 75%, rgba(19, 200, 255, 0.15) 0%, transparent 50%),
-    linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
-  z-index: -2;
-}
-
-/* Floating Orbs */
-.floating-orbs {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.orb {
+.home::before {
+  content: '';
   position: absolute;
-  border-radius: 50%;
-  filter: blur(100px);
-  animation: orbFloat 20s ease-in-out infinite;
-  opacity: 0.4;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, var(--primary-blue) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, var(--primary-yellow) 0%, transparent 50%),
+    radial-gradient(circle at 40% 40%, var(--electric-blue) 0%, transparent 50%);
+  opacity: 0.1;
+  animation: backgroundPulse 8s ease-in-out infinite;
+  z-index: 1;
 }
 
-.orb-1 {
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(255, 181, 39, 0.6), transparent);
-  top: 20%;
-  left: 10%;
-  animation-delay: 0s;
+@keyframes backgroundPulse {
+  0%, 100% { opacity: 0.1; transform: scale(1); }
+  50% { opacity: 0.2; transform: scale(1.05); }
 }
 
-.orb-2 {
-  width: 250px;
-  height: 250px;
-  background: radial-gradient(circle, rgba(19, 200, 255, 0.4), transparent);
-  bottom: 20%;
-  right: 15%;
-  animation-delay: 10s;
-}
-
-@keyframes orbFloat {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(30px, -30px) scale(1.1); }
-  50% { transform: translate(-20px, 20px) scale(0.9); }
-  75% { transform: translate(25px, -15px) scale(1.05); }
-}
 
 /* Content Container */
 .content-container {
@@ -82,8 +48,9 @@
   min-height: 100vh;
   gap: 40px;
   position: relative;
-  z-index: 2;
+  z-index: 3; /* Increased z-index to be above the Three.js background */
   padding: 0 40px 0 0;
+  color: var(--text-light); /* Ensure text is visible over the new background */
 }
 
 .ferris-wheel-container {
@@ -271,7 +238,7 @@
 
 @media (max-width: 768px) {
   .ferris-wheel-container { display: none !important; }
-  
+
   .content-container {
     flex-direction: column;
     align-items: center;
@@ -319,23 +286,9 @@
 
   .scroll-indicator { display: block; }
 
-  .orb-1 {
-    width: 280px;
-    height: 280px;
-    filter: blur(70px);
-    opacity: 0.5;
-    top: 8%;
-    left: -8%;
-  }
-
-  .orb-2 {
-    width: 220px;
-    height: 220px;
-    filter: blur(60px);
-    opacity: 0.4;
-    bottom: 12%;
-    right: -8%;
-  }
+  /* Removed old orb styles for mobile as well */
+  .orb-1 { display: none; }
+  .orb-2 { display: none; }
 }
 
 /* Performance optimizations */
@@ -351,3 +304,6 @@
   .home-btn:active { transform: scale(0.95); }
 
 }
+/* .bgg{
+  background: linear-gradient(transparent, yellow);
+} */
